@@ -61,11 +61,21 @@ export class MemStorage implements IStorage {
   async createRegistration(insertRegistration: InsertRegistration): Promise<Registration> {
     const id = this.registrationCurrentId++;
     const now = new Date();
+    
+    // Convert undefined values to null to satisfy the Registration type
     const registration: Registration = { 
-      ...insertRegistration, 
       id,
+      name: insertRegistration.name ?? null,
+      email: insertRegistration.email ?? null,
+      phone: insertRegistration.phone ?? null,
+      contactConsent: insertRegistration.contactConsent ?? null,
+      groupType: insertRegistration.groupType ?? null,
+      availability: insertRegistration.availability ?? null,
+      additionalNotes: insertRegistration.additionalNotes ?? null,
+      privacyConsent: insertRegistration.privacyConsent,
       createdAt: now
     };
+    
     this.registrations.set(id, registration);
     return registration;
   }

@@ -1,10 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { Helmet } from "react-helmet";
 
 export default function Home() {
   return (
     <div className="max-w-2xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>Step Study Registration | Celebrate Recovery</title>
+      </Helmet>
       <Card className="bg-white rounded-lg shadow-md overflow-hidden">
         <CardContent className="p-6">
           <div className="text-center mb-8">
