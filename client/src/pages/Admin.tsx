@@ -216,7 +216,7 @@ export default function Admin() {
       time: session.time,
       groupType: session.groupType,
       capacity: session.capacity || undefined,
-      isActive: session.isActive
+      isActive: session.isActive === null ? true : session.isActive
     });
     setIsSessionDialogOpen(true);
   };
@@ -486,7 +486,8 @@ export default function Admin() {
                           <div className="space-y-3 flex-1">
                             <div className="flex items-center justify-between">
                               <h3 className="text-lg font-medium text-[#374151]">{session.title}</h3>
-                              <Badge variant={session.isActive ? "success" : "outline"}>
+                              <Badge variant={session.isActive ? "default" : "outline"} 
+                                     className={session.isActive ? "bg-green-100 text-green-800 hover:bg-green-200 border-transparent" : ""}>
                                 {session.isActive ? "Active" : "Inactive"}
                               </Badge>
                             </div>
