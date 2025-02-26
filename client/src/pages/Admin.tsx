@@ -204,10 +204,16 @@ export default function Admin() {
 
   // Handle session form submission
   const onSessionFormSubmit = (values: StudySessionFormValues) => {
+    // If hasCapacity is false, ensure capacity is undefined
+    const submissionValues = { 
+      ...values,
+      capacity: values.hasCapacity ? values.capacity : undefined
+    };
+    
     if (editingSession) {
-      updateSession.mutate({ id: editingSession.id, values });
+      updateSession.mutate({ id: editingSession.id, values: submissionValues });
     } else {
-      createSession.mutate(values);
+      createSession.mutate(submissionValues);
     }
   };
   
@@ -570,7 +576,7 @@ export default function Admin() {
                                   {session.groupType === 'women' && 'Women\'s Group'}
                                 </span>
                               </div>
-                              {session.capacity && (
+                              {session.capacity !== null && session.capacity !== undefined && (
                                 <div className="flex items-center gap-2 text-sm text-[#6B7280]">
                                   <UsersIcon className="h-4 w-4 text-[#9CA3AF]" />
                                   <span>Capacity: {session.capacity}</span>
@@ -748,38 +754,59 @@ export default function Admin() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={sessionForm.control}
-                  name="groupType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Group Type</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select group type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="men">Men's Group</SelectItem>
-                          <SelectItem value="women">Women's Group</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+              <FormField
+                control={sessionForm.control}
+                name="groupType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Group Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select group type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="men">Men's Group</SelectItem>
+                        <SelectItem value="women">Women's Group</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={sessionForm.control}
+                name="hasCapacity"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Limit Capacity</FormLabel>
+                      <FormDescription>
+                        Set a maximum number of participants for this session
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {sessionForm.watch("hasCapacity") && (
                 <FormField
                   control={sessionForm.control}
                   name="capacity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Capacity (Optional)</FormLabel>
+                      <FormLabel>Maximum Capacity</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="12" 
@@ -796,7 +823,7 @@ export default function Admin() {
                     </FormItem>
                   )}
                 />
-              </div>
+              )}
               
               <FormField
                 control={sessionForm.control}
