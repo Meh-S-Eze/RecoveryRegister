@@ -148,7 +148,42 @@ export function RegistrationSteps() {
   };
   
   const onSubmit = async (values: FormValues) => {
-    registration.mutate(values);
+    try {
+      // Make sure required fields are set based on the selected option
+      if (showCustomTimes) {
+        // For custom times, make sure days and times are selected
+        if (values.availableDays.length === 0 || values.availableTimes.length === 0) {
+          toast({
+            title: "Please complete all fields",
+            description: "Please select at least one available day and time.",
+            variant: "destructive"
+          });
+          return;
+        }
+        // Ensure flexibilityOption is set correctly
+        values.flexibilityOption = "flexible_schedule";
+      } else {
+        // For regular session, make sure sessionId is set
+        if (!values.sessionId) {
+          toast({
+            title: "Please select a session",
+            description: "Please select a study session or choose the 'Other' option.",
+            variant: "destructive"
+          });
+          return;
+        }
+        // Ensure flexibilityOption is set correctly
+        values.flexibilityOption = "preferred_session";
+      }
+      registration.mutate(values);
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem submitting your registration. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   if (isSubmitted) {
@@ -179,15 +214,15 @@ export function RegistrationSteps() {
                   name="privacyConsent"
                   render={({ field }) => (
                     <FormItem className="mb-6 space-y-0">
-                      <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-2 cursor-pointer">
+                      <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
                         <FormControl>
                           <Checkbox 
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            className="mt-1 h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                           />
                         </FormControl>
-                        <div className="space-y-1 leading-none">
+                        <div className="space-y-1 leading-none flex-1">
                           <FormLabel className="text-sm text-[#374151] cursor-pointer">
                             I understand that my participation is confidential and I can choose what personal information to share.
                           </FormLabel>
@@ -298,15 +333,15 @@ export function RegistrationSteps() {
                     name="contactConsent"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-2 cursor-pointer">
+                        <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
                           <FormControl>
                             <Checkbox 
                               checked={field.value}
                               onCheckedChange={field.onChange}
-                              className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              className="mt-1 h-5 w-5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                             />
                           </FormControl>
-                          <div className="space-y-1 leading-none">
+                          <div className="space-y-1 leading-none flex-1">
                             <FormLabel className="text-sm text-[#374151] cursor-pointer">
                               I consent to being contacted about the step study program via the contact methods provided above.
                             </FormLabel>
