@@ -26,7 +26,10 @@ import {
   ToggleRightIcon,
   EditIcon,
   TrashIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  PhoneIcon,
+  MailIcon,
+  ExternalLinkIcon
 } from "lucide-react";
 import type { Registration, StudySession, InsertStudySession } from "@shared/schema";
 import { Helmet } from "react-helmet";
@@ -298,6 +301,40 @@ export default function Admin() {
           </Button>
         </div>
       </div>
+      
+      {/* Contact Information Card */}
+      <Card className="mb-6 border-blue-100">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold text-[#374151]">Primary Contact Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm font-medium text-[#6B7280] mb-1">Program Coordinator</h3>
+              <p className="text-[#374151]">John Smith</p>
+              <p className="text-[#374151]">Program Director</p>
+              <div className="mt-2 flex items-center gap-2 text-primary">
+                <PhoneIcon className="h-4 w-4" />
+                <a href="tel:(555) 123-4567" className="hover:underline">(555) 123-4567</a>
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-primary">
+                <MailIcon className="h-4 w-4" />
+                <a href="mailto:john@celebraterecovery.org" className="hover:underline">john@celebraterecovery.org</a>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-[#6B7280] mb-1">Meeting Location</h3>
+              <p className="text-[#374151]">Celebrate Recovery Center</p>
+              <p className="text-[#374151]">123 Main Street</p>
+              <p className="text-[#374151]">Springfield, IL 62701</p>
+              <div className="mt-2 flex items-center gap-2 text-primary">
+                <ExternalLinkIcon className="h-4 w-4" />
+                <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="hover:underline">Get Directions</a>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       
       <Tabs defaultValue="registrations" className="w-full">
         <TabsList className="mb-6">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,6 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CalendarIcon } from "lucide-react";
 
 // Define the study session type
 interface StudySession {
@@ -70,14 +71,22 @@ export function RegistrationSteps() {
   // State for selected group type - needed to filter study sessions
   const [selectedGroupType, setSelectedGroupType] = useState<string>("");
   
-  // Query to fetch study sessions based on group type
-  const studySessions = useQuery({
-    queryKey: ['/api/study-sessions', selectedGroupType],
+  // Query to fetch all active study sessions
+  const allStudySessions = useQuery({
+    queryKey: ['/api/study-sessions'],
     queryFn: () => 
-      apiRequest('GET', `/api/study-sessions?groupType=${selectedGroupType}&activeOnly=true`)
-        .then(res => res.json()),
-    enabled: !!selectedGroupType // Only run query when group type is selected
+      apiRequest('GET', '/api/study-sessions?activeOnly=true')
+        .then(res => res.json())
   });
+  
+  // Filter study sessions based on selected group type
+  const filteredSessions = useMemo(() => {
+    if (!allStudySessions.data) return [];
+    if (!selectedGroupType) return allStudySessions.data;
+    return allStudySessions.data.filter(
+      (session: StudySession) => session.groupType === selectedGroupType
+    );
+  }, [allStudySessions.data, selectedGroupType]);
   
   // Dialog state for flexible scheduling guidance
   const [showFlexibleGuidance, setShowFlexibleGuidance] = useState(false);
@@ -448,54 +457,96 @@ export function RegistrationSteps() {
                     )}
                   />
                   
-                  {/* Show study sessions if there are any and group type is selected */}
-                  {selectedGroupType && 
-                   (form.watch("flexibilityOption") === "preferred_session" || form.watch("flexibilityOption") === "either") && (
-                    <div className="mb-6">
-                      <h3 className="text-base font-medium text-[#374151] mb-3">Available Study Sessions</h3>
+                  {/* Show study sessions if user selected preferred sessions or either */}
+                  {(form.watch("flexibilityOption") === "preferred_session" || form.watch("flexibilityOption") === "either") && (
+                    <div className="mb-6 border rounded-lg p-5 bg-white shadow-sm">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+                        <h3 className="text-base font-medium text-[#374151]">Available Study Sessions</h3>
+                        
+                        <div className="flex items-center space-x-2 w-full md:w-auto">
+                          <Button
+                            type="button"
+                            variant={selectedGroupType === "" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedGroupType("")}
+                            className="h-9 flex-grow md:flex-grow-0"
+                          >
+                            All Sessions
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={selectedGroupType === "men" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedGroupType("men")}
+                            className="h-9 flex-grow md:flex-grow-0"
+                          >
+                            Men's Groups
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={selectedGroupType === "women" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedGroupType("women")}
+                            className="h-9 flex-grow md:flex-grow-0"
+                          >
+                            Women's Groups
+                          </Button>
+                        </div>
+                      </div>
                       
-                      {studySessions.isLoading && (
+                      {allStudySessions.isLoading && (
                         <div className="text-center p-4">
                           <p className="text-sm text-[#6B7280]">Loading available sessions...</p>
                         </div>
                       )}
                       
-                      {studySessions.isError && (
+                      {allStudySessions.isError && (
                         <div className="text-center p-4 text-red-500">
                           <p className="text-sm">Error loading sessions. Please try again.</p>
                         </div>
                       )}
                       
-                      {studySessions.isSuccess && studySessions.data.length === 0 && (
-                        <div className="text-center p-4">
-                          <p className="text-sm text-[#6B7280]">No scheduled sessions available at this time.</p>
+                      {allStudySessions.isSuccess && filteredSessions.length === 0 && (
+                        <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
+                          <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                            <CalendarIcon className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <p className="text-[#6B7280] font-medium">No scheduled sessions available</p>
+                          <p className="text-sm text-[#9CA3AF] mt-1">
+                            {selectedGroupType ? "Try selecting a different group type" : "Please check back later"}
+                          </p>
                         </div>
                       )}
                       
-                      {studySessions.isSuccess && studySessions.data.length > 0 && (
+                      {allStudySessions.isSuccess && filteredSessions.length > 0 && (
                         <FormField
                           control={form.control}
                           name="sessionId"
                           render={({ field }) => (
                             <FormItem>
                               <div className="space-y-4">
-                                {studySessions.data.map((session: StudySession) => (
+                                {filteredSessions.map((session: StudySession) => (
                                   <div 
                                     key={session.id} 
-                                    className={`border rounded-md p-4 cursor-pointer transition-colors ${
+                                    className={`border rounded-md p-4 cursor-pointer transition-colors hover:shadow-md ${
                                       field.value === session.id 
                                         ? 'border-primary bg-primary/5' 
-                                        : 'border-gray-200 hover:border-primary/50'
+                                        : 'border-gray-200 hover:border-primary/30'
                                     }`}
                                     onClick={() => field.onChange(session.id)}
                                   >
                                     <div className="flex justify-between items-start mb-2">
                                       <h4 className="font-medium text-[#374151]">{session.title}</h4>
-                                      {session.capacity && (
-                                        <Badge variant="outline" className="text-xs">
-                                          Capacity: {session.capacity}
+                                      <div className="flex gap-2">
+                                        <Badge variant="outline" className="text-xs bg-gray-50">
+                                          {session.groupType === 'men' ? 'Men' : 'Women'}
                                         </Badge>
-                                      )}
+                                        {session.capacity && (
+                                          <Badge variant="outline" className="text-xs">
+                                            Capacity: {session.capacity}
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </div>
                                     {session.description && (
                                       <p className="text-sm text-[#6B7280] mb-2">{session.description}</p>
@@ -513,6 +564,9 @@ export function RegistrationSteps() {
                                   </div>
                                 ))}
                               </div>
+                              {form.formState.errors.sessionId && (
+                                <p className="text-xs text-red-500 mt-2">{form.formState.errors.sessionId.message}</p>
+                              )}
                             </FormItem>
                           )}
                         />
