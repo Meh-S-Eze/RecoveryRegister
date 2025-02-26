@@ -387,6 +387,12 @@ export function RegistrationSteps() {
                           onValueChange={(value) => {
                             field.onChange(value);
                             setSelectedGroupType(value); // Update state to trigger the query
+                            // Reset showCustomTimes when group type changes
+                            setShowCustomTimes(false);
+                            // Reset sessionId when changing group type
+                            form.setValue("sessionId", undefined);
+                            // Reset flexibilityOption 
+                            form.setValue("flexibilityOption", "preferred_session");
                           }}
                           defaultValue={field.value}
                         >
@@ -407,57 +413,11 @@ export function RegistrationSteps() {
                     )}
                   />
                   
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-                    <p className="text-sm text-blue-800 mb-1 font-medium">Important Information</p>
-                    <p className="text-sm text-blue-700">
-                      We have both scheduled study sessions and flexible options. You're encouraged to join even if 
-                      you can't make the scheduled times. We'll do our best to accommodate everyone.
-                    </p>
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="flexibilityOption"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3 mb-6">
-                        <FormLabel className="text-sm font-medium text-[#374151]">Scheduling Preference</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              // Show guidance when flexible schedule is selected
-                              if (value === "flexible_schedule") {
-                                setShowFlexibleGuidance(true);
-                              }
-                            }}
-                            defaultValue={field.value}
-                            className="space-y-3"
-                          >
-                            <div className="flex items-start space-x-2">
-                              <RadioGroupItem value="preferred_session" id="preferred_session" className="mt-1" />
-                              <FormLabel htmlFor="preferred_session" className="text-sm text-[#374151] font-normal">
-                                I'd like to join a scheduled study session (recommended)
-                              </FormLabel>
-                            </div>
-                            <div className="flex items-start space-x-2">
-                              <RadioGroupItem value="flexible_schedule" id="flexible_schedule" className="mt-1" />
-                              <FormLabel htmlFor="flexible_schedule" className="text-sm text-[#374151] font-normal">
-                                I need a flexible schedule (select available days/times below)
-                              </FormLabel>
-                            </div>
-                            <div className="flex items-start space-x-2">
-                              <RadioGroupItem value="either" id="either" className="mt-1" />
-                              <FormLabel htmlFor="either" className="text-sm text-[#374151] font-normal">
-                                I'm open to either option
-                              </FormLabel>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        {form.formState.errors.flexibilityOption && (
-                          <p className="text-xs text-red-500 mt-1">{form.formState.errors.flexibilityOption.message}</p>
-                        )}
-                      </FormItem>
-                    )}
+                  {/* Hidden field to maintain the flexibilityOption value */}
+                  <input 
+                    type="hidden" 
+                    value={showCustomTimes ? "flexible_schedule" : "preferred_session"} 
+                    onChange={(e) => form.setValue("flexibilityOption", e.target.value)}
                   />
                   
                   {/* Show study sessions if user selected preferred sessions or either */}
@@ -536,7 +496,11 @@ export function RegistrationSteps() {
                                         ? 'border-primary bg-primary/5' 
                                         : 'border-gray-200 hover:border-primary/30'
                                     }`}
-                                    onClick={() => field.onChange(session.id)}
+                                    onClick={() => {
+                                      field.onChange(session.id);
+                                      setShowCustomTimes(false);
+                                      form.setValue("flexibilityOption", "preferred_session");
+                                    }}
                                   >
                                     <div className="flex justify-between items-start mb-2">
                                       <h4 className="font-medium text-[#374151]">{session.title}</h4>
@@ -566,6 +530,29 @@ export function RegistrationSteps() {
                                     </div>
                                   </div>
                                 ))}
+                                
+                                {/* "Other" option button */}
+                                <div 
+                                  className={`border rounded-md p-4 cursor-pointer transition-colors hover:shadow-md ${
+                                    showCustomTimes 
+                                      ? 'border-primary bg-primary/5' 
+                                      : 'border-gray-200 hover:border-primary/30'
+                                  }`}
+                                  onClick={() => {
+                                    form.setValue("sessionId", undefined);
+                                    setShowCustomTimes(!showCustomTimes);
+                                    form.setValue("flexibilityOption", "flexible_schedule");
+                                  }}
+                                >
+                                  <div className="flex items-center">
+                                    <div className="mr-3 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                      <CalendarIcon className="h-4 w-4 text-gray-500" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-medium text-[#374151]">Other - Times that would work for me</h4>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                               {form.formState.errors.sessionId && (
                                 <p className="text-xs text-red-500 mt-2">{form.formState.errors.sessionId.message}</p>
