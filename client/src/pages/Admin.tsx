@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistance } from "date-fns";
 import { CheckCircleIcon, AlertCircle } from "lucide-react";
 import type { Registration } from "@shared/schema";
+import { Helmet } from "react-helmet";
 
 export default function Admin() {
   const { data: registrations, isLoading, error } = useQuery<Registration[]>({
@@ -58,6 +59,9 @@ export default function Admin() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <Helmet>
+        <title>Admin Dashboard | Celebrate Recovery</title>
+      </Helmet>
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">

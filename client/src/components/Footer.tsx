@@ -21,10 +21,15 @@ export function Footer() {
                 About
               </a>
             </Link>
+            <Link href="/admin">
+              <a className="text-[#9CA3AF] hover:text-primary">
+                Admin
+              </a>
+            </Link>
           </div>
           <div className="mt-4 md:mt-0">
             <p className="text-center text-sm text-[#9CA3AF]">
-              &copy; {new Date().getFullYear()} Celebrate Recovery. All rights reserved.
+              &copy; {new Date().getFullYear()} Celebrate Recovery program. All rights reserved.
             </p>
           </div>
         </div>
