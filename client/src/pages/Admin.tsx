@@ -11,13 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistance } from "date-fns";
-import { CheckCircleIcon, AlertCircle } from "lucide-react";
+import { CheckCircleIcon, AlertCircle, RefreshCw } from "lucide-react";
 import type { Registration } from "@shared/schema";
 import { Helmet } from "react-helmet";
 
 export default function Admin() {
-  const { data: registrations, isLoading, error } = useQuery<Registration[]>({
+  const { data: registrations, isLoading, error, refetch } = useQuery<Registration[]>({
     queryKey: ['/api/registrations'],
+    refetchOnMount: true,
+    staleTime: 10000, // 10 seconds
   });
 
   const getContactStatus = (registration: Registration) => {
@@ -68,11 +70,23 @@ export default function Admin() {
             <CardTitle className="text-xl font-semibold text-[#374151]">
               Step Study Registrations
             </CardTitle>
-            <Button
-              className="bg-primary hover:bg-blue-600 text-white"
-            >
-              Export Data
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                className="flex items-center gap-1"
+                disabled={isLoading}
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh</span>
+              </Button>
+              <Button
+                className="bg-primary hover:bg-blue-600 text-white"
+              >
+                Export Data
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -120,8 +134,6 @@ export default function Admin() {
                         <TableCell>
                           {registration.groupType === 'men' && 'Men\'s Group'}
                           {registration.groupType === 'women' && 'Women\'s Group'}
-                          {registration.groupType === 'mixed' && 'Mixed Group'}
-                          {registration.groupType === 'no-preference' && 'No Preference'}
                         </TableCell>
                         <TableCell>
                           {registration.availability === 'weekday-morning' && 'Weekday Mornings'}

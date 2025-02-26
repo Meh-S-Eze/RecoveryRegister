@@ -307,8 +307,6 @@ export function RegistrationSteps() {
                           <SelectContent>
                             <SelectItem value="men">Men's Group</SelectItem>
                             <SelectItem value="women">Women's Group</SelectItem>
-                            <SelectItem value="mixed">Mixed Group</SelectItem>
-                            <SelectItem value="no-preference">No Preference</SelectItem>
                           </SelectContent>
                         </Select>
                         {form.formState.errors.groupType && (
