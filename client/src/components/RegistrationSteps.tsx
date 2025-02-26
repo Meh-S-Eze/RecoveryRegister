@@ -56,8 +56,8 @@ const formSchema = z.object({
   sessionId: z.number().optional(),
   
   // Custom availability
-  availableDays: z.array(z.string()).optional().default([]),
-  availableTimes: z.array(z.string()).optional().default([]),
+  availableDays: z.array(z.string()).min(0).default([]),
+  availableTimes: z.array(z.string()).min(0).default([]),
   additionalNotes: z.string().optional()
 });
 
@@ -179,7 +179,7 @@ export function RegistrationSteps() {
                   name="privacyConsent"
                   render={({ field }) => (
                     <FormItem className="mb-6 space-y-0">
-                      <div className="flex items-start space-x-2">
+                      <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-2 cursor-pointer">
                         <FormControl>
                           <Checkbox 
                             checked={field.value}
@@ -188,7 +188,7 @@ export function RegistrationSteps() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm text-[#374151]">
+                          <FormLabel className="text-sm text-[#374151] cursor-pointer">
                             I understand that my participation is confidential and I can choose what personal information to share.
                           </FormLabel>
                         </div>
@@ -298,7 +298,7 @@ export function RegistrationSteps() {
                     name="contactConsent"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <div className="flex items-start space-x-2">
+                        <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-2 cursor-pointer">
                           <FormControl>
                             <Checkbox 
                               checked={field.value}
@@ -307,7 +307,7 @@ export function RegistrationSteps() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel className="text-sm text-[#374151]">
+                            <FormLabel className="text-sm text-[#374151] cursor-pointer">
                               I consent to being contacted about the step study program via the contact methods provided above.
                             </FormLabel>
                           </div>
