@@ -22,7 +22,8 @@ export const studySessions = pgTable("study_sessions", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  location: text("location").notNull(),
+  location: text("location").notNull(), // General location (e.g., "Church Fellowship Hall")
+  address: text("address"), // Specific street address
   date: text("date").notNull(), // Storing as text for flexibility (e.g. "Every Monday starting June 5")
   time: text("time").notNull(), // Storing as text for flexibility (e.g. "7:00 PM - 9:00 PM")
   groupType: text("group_type").notNull(), // "men" or "women"

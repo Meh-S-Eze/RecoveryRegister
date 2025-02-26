@@ -460,16 +460,16 @@ export function RegistrationSteps() {
                   {/* Show study sessions if user selected preferred sessions or either */}
                   {(form.watch("flexibilityOption") === "preferred_session" || form.watch("flexibilityOption") === "either") && (
                     <div className="mb-6 border rounded-lg p-5 bg-white shadow-sm">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+                      <div className="flex flex-col mb-4 gap-3">
                         <h3 className="text-base font-medium text-[#374151]">Available Study Sessions</h3>
                         
-                        <div className="flex items-center space-x-2 w-full md:w-auto">
+                        <div className="grid grid-cols-3 gap-2">
                           <Button
                             type="button"
                             variant={selectedGroupType === "" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setSelectedGroupType("")}
-                            className="h-9 flex-grow md:flex-grow-0"
+                            className="h-9 w-full text-xs sm:text-sm"
                           >
                             All Sessions
                           </Button>
@@ -478,7 +478,7 @@ export function RegistrationSteps() {
                             variant={selectedGroupType === "men" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setSelectedGroupType("men")}
-                            className="h-9 flex-grow md:flex-grow-0"
+                            className="h-9 w-full text-xs sm:text-sm"
                           >
                             Men's Groups
                           </Button>
@@ -487,7 +487,7 @@ export function RegistrationSteps() {
                             variant={selectedGroupType === "women" ? "default" : "outline"}
                             size="sm"
                             onClick={() => setSelectedGroupType("women")}
-                            className="h-9 flex-grow md:flex-grow-0"
+                            className="h-9 w-full text-xs sm:text-sm"
                           >
                             Women's Groups
                           </Button>
@@ -541,7 +541,7 @@ export function RegistrationSteps() {
                                         <Badge variant="outline" className="text-xs bg-gray-50">
                                           {session.groupType === 'men' ? 'Men' : 'Women'}
                                         </Badge>
-                                        {session.capacity && (
+                                        {session.capacity !== null && session.capacity !== undefined && (
                                           <Badge variant="outline" className="text-xs">
                                             Capacity: {session.capacity}
                                           </Badge>

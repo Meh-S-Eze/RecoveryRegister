@@ -68,7 +68,8 @@ import { useToast } from "@/hooks/use-toast";
 const studySessionSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
-  location: z.string().min(3, "Location is required"),
+  location: z.string().min(3, "Location is required"), // General location name
+  address: z.string().optional(), // Specific street address
   date: z.string().min(3, "Date information is required"),
   time: z.string().min(3, "Time information is required"),
   groupType: z.string().min(1, "Please select a group type"),
@@ -105,6 +106,7 @@ export default function Admin() {
       title: "",
       description: "",
       location: "",
+      address: "",
       date: "",
       time: "",
       groupType: "",
@@ -224,6 +226,7 @@ export default function Admin() {
       title: session.title,
       description: session.description || "",
       location: session.location,
+      address: session.address || "",
       date: session.date,
       time: session.time,
       groupType: session.groupType,
@@ -241,6 +244,7 @@ export default function Admin() {
       title: "",
       description: "",
       location: "",
+      address: "",
       date: "",
       time: "",
       groupType: "",
