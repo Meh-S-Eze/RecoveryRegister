@@ -72,6 +72,7 @@ const studySessionSchema = z.object({
   date: z.string().min(3, "Date information is required"),
   time: z.string().min(3, "Time information is required"),
   groupType: z.string().min(1, "Please select a group type"),
+  hasCapacity: z.boolean().default(false),
   capacity: z.coerce.number().positive().optional(),
   isActive: z.boolean().default(true)
 });
@@ -107,6 +108,7 @@ export default function Admin() {
       date: "",
       time: "",
       groupType: "",
+      hasCapacity: false,
       capacity: undefined,
       isActive: true
     }
@@ -219,6 +221,7 @@ export default function Admin() {
       date: session.date,
       time: session.time,
       groupType: session.groupType,
+      hasCapacity: session.capacity !== null && session.capacity !== undefined,
       capacity: session.capacity || undefined,
       isActive: session.isActive === null ? true : session.isActive
     });
@@ -235,6 +238,7 @@ export default function Admin() {
       date: "",
       time: "",
       groupType: "",
+      hasCapacity: false,
       capacity: undefined,
       isActive: true
     });
