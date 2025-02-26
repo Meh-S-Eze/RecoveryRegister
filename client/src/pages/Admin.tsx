@@ -25,7 +25,8 @@ import {
   ToggleLeftIcon,
   ToggleRightIcon,
   EditIcon,
-  TrashIcon
+  TrashIcon,
+  ArrowLeftIcon
 } from "lucide-react";
 import type { Registration, StudySession, InsertStudySession } from "@shared/schema";
 import { Helmet } from "react-helmet";
@@ -282,8 +283,20 @@ export default function Admin() {
       </Helmet>
       
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#374151]">Admin Dashboard</h1>
-        <p className="text-[#6B7280]">Manage step study registrations and scheduled sessions</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-[#374151]">Admin Dashboard</h1>
+            <p className="text-[#6B7280]">Manage step study registrations and scheduled sessions</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = '/'}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue="registrations" className="w-full">

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
@@ -78,6 +79,9 @@ export function RegistrationSteps() {
     enabled: !!selectedGroupType // Only run query when group type is selected
   });
   
+  // Dialog state for flexible scheduling guidance
+  const [showFlexibleGuidance, setShowFlexibleGuidance] = useState(false);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -87,7 +91,7 @@ export function RegistrationSteps() {
       phone: "",
       contactConsent: false,
       groupType: "",
-      flexibilityOption: "",
+      flexibilityOption: "preferred_session", // Default to scheduled sessions
       availableDays: [],
       availableTimes: [],
       additionalNotes: ""
@@ -144,6 +148,40 @@ export function RegistrationSteps() {
     <Card className="bg-white rounded-lg shadow-md overflow-hidden max-w-2xl mx-auto">
       <div className="p-6">
         <FormProgress step={step} totalSteps={totalSteps} />
+        
+        {/* Flexible scheduling guidance dialog */}
+        <Dialog open={showFlexibleGuidance} onOpenChange={setShowFlexibleGuidance}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>About Flexible Scheduling</DialogTitle>
+            </DialogHeader>
+            <div className="text-[#374151] space-y-4">
+              <p>
+                While we're happy to accommodate flexible scheduling needs, joining an 
+                <strong> existing scheduled session</strong> is usually the best experience for step study.
+              </p>
+              <p>
+                Existing groups have established meeting times and consistent attendance, which helps 
+                build the trust and community that makes step studies most effective.
+              </p>
+              <p>
+                If you select the flexible option, we'll do our best to find or create a group that fits your 
+                schedule, but this may take longer and depends on finding others with similar availability.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button 
+                onClick={() => {
+                  setShowFlexibleGuidance(false);
+                  // Don't automatically change their selection, just provide guidance
+                }}
+                className="bg-primary hover:bg-blue-600 text-white mt-4"
+              >
+                I Understand
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -373,14 +411,20 @@ export function RegistrationSteps() {
                         <FormLabel className="text-sm font-medium text-[#374151]">Scheduling Preference</FormLabel>
                         <FormControl>
                           <RadioGroup
-                            onValueChange={field.onChange}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              // Show guidance when flexible schedule is selected
+                              if (value === "flexible_schedule") {
+                                setShowFlexibleGuidance(true);
+                              }
+                            }}
                             defaultValue={field.value}
                             className="space-y-3"
                           >
                             <div className="flex items-start space-x-2">
                               <RadioGroupItem value="preferred_session" id="preferred_session" className="mt-1" />
                               <FormLabel htmlFor="preferred_session" className="text-sm text-[#374151] font-normal">
-                                I'd like to join a scheduled study session (select below)
+                                I'd like to join a scheduled study session (recommended)
                               </FormLabel>
                             </div>
                             <div className="flex items-start space-x-2">
