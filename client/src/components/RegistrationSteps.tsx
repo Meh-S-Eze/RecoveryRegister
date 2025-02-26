@@ -31,7 +31,7 @@ const formSchema = z.object({
   
   // Step 3
   groupType: z.string().min(1, "Please select a group type"),
-  availability: z.string().min(1, "Please select your availability"),
+  availability: z.array(z.string()).min(1, "Please select at least one availability option"),
   additionalNotes: z.string().optional()
 });
 
@@ -51,7 +51,7 @@ export function RegistrationSteps() {
       phone: "",
       contactConsent: false,
       groupType: "",
-      availability: "",
+      availability: [],
       additionalNotes: ""
     },
     mode: "onChange"
@@ -320,26 +320,113 @@ export function RegistrationSteps() {
                     control={form.control}
                     name="availability"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-[#374151]">Availability</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="min-h-[44px] w-full pl-3 pr-10 py-2 text-base border-[#9CA3AF] focus:outline-none focus:ring-primary focus:border-primary rounded-md">
-                              <SelectValue placeholder="Select your availability" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="weekday-morning">Weekday Mornings</SelectItem>
-                            <SelectItem value="weekday-afternoon">Weekday Afternoons</SelectItem>
-                            <SelectItem value="weekday-evening">Weekday Evenings</SelectItem>
-                            <SelectItem value="weekend-morning">Weekend Mornings</SelectItem>
-                            <SelectItem value="weekend-afternoon">Weekend Afternoons</SelectItem>
-                            <SelectItem value="weekend-evening">Weekend Evenings</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-sm font-medium text-[#374151]">Availability (Select all that apply)</FormLabel>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="flex items-start space-x-2">
+                              <Checkbox
+                                checked={field.value?.includes('weekday-morning')}
+                                onCheckedChange={(checked) => {
+                                  const newValue = [...field.value || []];
+                                  if (checked) {
+                                    newValue.push('weekday-morning');
+                                  } else {
+                                    newValue.splice(newValue.indexOf('weekday-morning'), 1);
+                                  }
+                                  field.onChange(newValue);
+                                }}
+                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                              <FormLabel className="text-sm text-[#374151]">Weekday Mornings</FormLabel>
+                            </div>
+                            
+                            <div className="flex items-start space-x-2">
+                              <Checkbox
+                                checked={field.value?.includes('weekday-afternoon')}
+                                onCheckedChange={(checked) => {
+                                  const newValue = [...field.value || []];
+                                  if (checked) {
+                                    newValue.push('weekday-afternoon');
+                                  } else {
+                                    newValue.splice(newValue.indexOf('weekday-afternoon'), 1);
+                                  }
+                                  field.onChange(newValue);
+                                }}
+                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                              <FormLabel className="text-sm text-[#374151]">Weekday Afternoons</FormLabel>
+                            </div>
+                            
+                            <div className="flex items-start space-x-2">
+                              <Checkbox
+                                checked={field.value?.includes('weekday-evening')}
+                                onCheckedChange={(checked) => {
+                                  const newValue = [...field.value || []];
+                                  if (checked) {
+                                    newValue.push('weekday-evening');
+                                  } else {
+                                    newValue.splice(newValue.indexOf('weekday-evening'), 1);
+                                  }
+                                  field.onChange(newValue);
+                                }}
+                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                              <FormLabel className="text-sm text-[#374151]">Weekday Evenings</FormLabel>
+                            </div>
+                            
+                            <div className="flex items-start space-x-2">
+                              <Checkbox
+                                checked={field.value?.includes('weekend-morning')}
+                                onCheckedChange={(checked) => {
+                                  const newValue = [...field.value || []];
+                                  if (checked) {
+                                    newValue.push('weekend-morning');
+                                  } else {
+                                    newValue.splice(newValue.indexOf('weekend-morning'), 1);
+                                  }
+                                  field.onChange(newValue);
+                                }}
+                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                              <FormLabel className="text-sm text-[#374151]">Weekend Mornings</FormLabel>
+                            </div>
+                            
+                            <div className="flex items-start space-x-2">
+                              <Checkbox
+                                checked={field.value?.includes('weekend-afternoon')}
+                                onCheckedChange={(checked) => {
+                                  const newValue = [...field.value || []];
+                                  if (checked) {
+                                    newValue.push('weekend-afternoon');
+                                  } else {
+                                    newValue.splice(newValue.indexOf('weekend-afternoon'), 1);
+                                  }
+                                  field.onChange(newValue);
+                                }}
+                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                              <FormLabel className="text-sm text-[#374151]">Weekend Afternoons</FormLabel>
+                            </div>
+                            
+                            <div className="flex items-start space-x-2">
+                              <Checkbox
+                                checked={field.value?.includes('weekend-evening')}
+                                onCheckedChange={(checked) => {
+                                  const newValue = [...field.value || []];
+                                  if (checked) {
+                                    newValue.push('weekend-evening');
+                                  } else {
+                                    newValue.splice(newValue.indexOf('weekend-evening'), 1);
+                                  }
+                                  field.onChange(newValue);
+                                }}
+                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                              />
+                              <FormLabel className="text-sm text-[#374151]">Weekend Evenings</FormLabel>
+                            </div>
+                          </div>
+                        </div>
                         {form.formState.errors.availability && (
                           <p className="text-xs text-red-500 mt-1">{form.formState.errors.availability.message}</p>
                         )}

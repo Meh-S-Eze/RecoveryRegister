@@ -136,12 +136,21 @@ export default function Admin() {
                           {registration.groupType === 'women' && 'Women\'s Group'}
                         </TableCell>
                         <TableCell>
-                          {registration.availability === 'weekday-morning' && 'Weekday Mornings'}
-                          {registration.availability === 'weekday-afternoon' && 'Weekday Afternoons'}
-                          {registration.availability === 'weekday-evening' && 'Weekday Evenings'}
-                          {registration.availability === 'weekend-morning' && 'Weekend Mornings'}
-                          {registration.availability === 'weekend-afternoon' && 'Weekend Afternoons'}
-                          {registration.availability === 'weekend-evening' && 'Weekend Evenings'}
+                          <div className="space-y-1">
+                            {Array.isArray(registration.availability) && registration.availability.map(avail => (
+                              <div key={avail} className="text-sm">
+                                {avail === 'weekday-morning' && 'Weekday Mornings'}
+                                {avail === 'weekday-afternoon' && 'Weekday Afternoons'}
+                                {avail === 'weekday-evening' && 'Weekday Evenings'}
+                                {avail === 'weekend-morning' && 'Weekend Mornings'}
+                                {avail === 'weekend-afternoon' && 'Weekend Afternoons'}
+                                {avail === 'weekend-evening' && 'Weekend Evenings'}
+                              </div>
+                            ))}
+                            {(!Array.isArray(registration.availability) || registration.availability.length === 0) && (
+                              <span className="text-[#9CA3AF]">Not specified</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {registration.createdAt ? (

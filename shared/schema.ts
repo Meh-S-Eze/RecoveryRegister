@@ -25,7 +25,7 @@ export const registrations = pgTable("registrations", {
   phone: text("phone"),
   contactConsent: boolean("contact_consent").default(false),
   groupType: text("group_type"),
-  availability: text("availability"),
+  availability: text("availability").array(),
   additionalNotes: text("additional_notes"),
   privacyConsent: boolean("privacy_consent").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -45,5 +45,5 @@ export const registrationFormSchema = insertRegistrationSchema.extend({
     message: "You must acknowledge the privacy notice to continue."
   }),
   groupType: z.string().min(1, "Please select a group type"),
-  availability: z.string().min(1, "Please select your availability")
+  availability: z.array(z.string()).min(1, "Please select at least one availability option")
 });
