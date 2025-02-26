@@ -136,20 +136,38 @@ export default function Admin() {
                           {registration.groupType === 'women' && 'Women\'s Group'}
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            {Array.isArray(registration.availability) && registration.availability.map(avail => (
-                              <div key={avail} className="text-sm">
-                                {avail === 'weekday-morning' && 'Weekday Mornings'}
-                                {avail === 'weekday-afternoon' && 'Weekday Afternoons'}
-                                {avail === 'weekday-evening' && 'Weekday Evenings'}
-                                {avail === 'weekend-morning' && 'Weekend Mornings'}
-                                {avail === 'weekend-afternoon' && 'Weekend Afternoons'}
-                                {avail === 'weekend-evening' && 'Weekend Evenings'}
-                              </div>
-                            ))}
-                            {(!Array.isArray(registration.availability) || registration.availability.length === 0) && (
-                              <span className="text-[#9CA3AF]">Not specified</span>
-                            )}
+                          <div>
+                            <div className="font-medium text-sm mb-1">Days:</div>
+                            <div className="space-y-1 mb-3">
+                              {Array.isArray(registration.availableDays) && registration.availableDays.map(day => (
+                                <div key={day} className="text-sm">
+                                  {day === 'monday' && 'Monday'}
+                                  {day === 'tuesday' && 'Tuesday'}
+                                  {day === 'wednesday' && 'Wednesday'}
+                                  {day === 'thursday' && 'Thursday'}
+                                  {day === 'friday' && 'Friday'}
+                                  {day === 'saturday' && 'Saturday'}
+                                  {day === 'sunday' && 'Sunday'}
+                                </div>
+                              ))}
+                              {(!Array.isArray(registration.availableDays) || registration.availableDays.length === 0) && (
+                                <span className="text-[#9CA3AF]">Not specified</span>
+                              )}
+                            </div>
+                            
+                            <div className="font-medium text-sm mb-1">Times:</div>
+                            <div className="space-y-1">
+                              {Array.isArray(registration.availableTimes) && registration.availableTimes.map(time => (
+                                <div key={time} className="text-sm">
+                                  {time === 'morning' && 'Morning (8am-12pm)'}
+                                  {time === 'afternoon' && 'Afternoon (12pm-5pm)'}
+                                  {time === 'evening' && 'Evening (5pm-9pm)'}
+                                </div>
+                              ))}
+                              {(!Array.isArray(registration.availableTimes) || registration.availableTimes.length === 0) && (
+                                <span className="text-[#9CA3AF]">Not specified</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>

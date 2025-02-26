@@ -70,7 +70,8 @@ export class MemStorage implements IStorage {
       phone: insertRegistration.phone ?? null,
       contactConsent: insertRegistration.contactConsent ?? null,
       groupType: insertRegistration.groupType ?? null,
-      availability: insertRegistration.availability ?? null,
+      availableDays: insertRegistration.availableDays ?? null,
+      availableTimes: insertRegistration.availableTimes ?? null,
       additionalNotes: insertRegistration.additionalNotes ?? null,
       privacyConsent: insertRegistration.privacyConsent,
       createdAt: now
