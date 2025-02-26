@@ -670,15 +670,15 @@ export default function Admin() {
       
       {/* Study Session Form Dialog */}
       <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{editingSession ? "Edit Study Session" : "Create New Study Session"}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[500px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-xl">{editingSession ? "Edit Study Session" : "Create New Study Session"}</DialogTitle>
+            <DialogDescription className="text-sm text-[#6B7280] mt-1">
               {editingSession ? "Update the details of this study session" : "Fill in the details to create a new study session."}
             </DialogDescription>
           </DialogHeader>
           <Form {...sessionForm}>
-            <form onSubmit={sessionForm.handleSubmit(onSessionFormSubmit)} className="space-y-4">
+            <form onSubmit={sessionForm.handleSubmit(onSessionFormSubmit)} className="space-y-5">
               <FormField
                 control={sessionForm.control}
                 name="title"
@@ -716,10 +716,30 @@ export default function Admin() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel>Location Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Church Fellowship Hall - Room 101" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      General location (e.g., building name or room number)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={sessionForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 Main Street, Springfield, IL 62701" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Full address information for directions
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -850,18 +870,18 @@ export default function Admin() {
                 )}
               />
               
-              <DialogFooter>
+              <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6">
                 <Button 
                   type="button"
                   variant="outline" 
                   onClick={() => setIsSessionDialogOpen(false)}
-                  className="mt-4"
+                  className="mt-3 sm:mt-0 w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit"
-                  className="bg-primary hover:bg-blue-600 text-white mt-4"
+                  className="bg-primary hover:bg-blue-600 text-white w-full sm:w-auto"
                   disabled={createSession.isPending || updateSession.isPending}
                 >
                   {createSession.isPending || updateSession.isPending ? (
