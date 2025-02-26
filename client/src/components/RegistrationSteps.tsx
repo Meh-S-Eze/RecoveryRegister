@@ -71,6 +71,9 @@ export function RegistrationSteps() {
   // State for selected group type - needed to filter study sessions
   const [selectedGroupType, setSelectedGroupType] = useState<string>("");
   
+  // State to track if the user wants to specify custom times
+  const [showCustomTimes, setShowCustomTimes] = useState(false);
+  
   // Query to fetch all active study sessions
   const allStudySessions = useQuery({
     queryKey: ['/api/study-sessions'],
