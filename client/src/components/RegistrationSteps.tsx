@@ -2,12 +2,13 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
@@ -15,6 +16,22 @@ import { FormProgress } from "@/components/FormProgress";
 import { ConfirmationMessage } from "@/components/ConfirmationMessage";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+// Define the study session type
+interface StudySession {
+  id: number;
+  title: string;
+  description: string | null;
+  location: string;
+  date: string;
+  time: string;
+  groupType: string;
+  capacity: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
 
 // Form schema
 const formSchema = z.object({
@@ -31,8 +48,14 @@ const formSchema = z.object({
   
   // Step 3
   groupType: z.string().min(1, "Please select a group type"),
-  availableDays: z.array(z.string()).min(1, "Please select at least one day"),
-  availableTimes: z.array(z.string()).min(1, "Please select at least one time"),
+  
+  // Study session selection
+  flexibilityOption: z.string().min(1, "Please select a scheduling preference"),
+  sessionId: z.number().optional(),
+  
+  // Custom availability
+  availableDays: z.array(z.string()).optional().default([]),
+  availableTimes: z.array(z.string()).optional().default([]),
   additionalNotes: z.string().optional()
 });
 
@@ -43,6 +66,18 @@ export function RegistrationSteps() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
   
+  // State for selected group type - needed to filter study sessions
+  const [selectedGroupType, setSelectedGroupType] = useState<string>("");
+  
+  // Query to fetch study sessions based on group type
+  const studySessions = useQuery({
+    queryKey: ['/api/study-sessions', selectedGroupType],
+    queryFn: () => 
+      apiRequest('GET', `/api/study-sessions?groupType=${selectedGroupType}&activeOnly=true`)
+        .then(res => res.json()),
+    enabled: !!selectedGroupType // Only run query when group type is selected
+  });
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -52,6 +87,7 @@ export function RegistrationSteps() {
       phone: "",
       contactConsent: false,
       groupType: "",
+      flexibilityOption: "",
       availableDays: [],
       availableTimes: [],
       additionalNotes: ""
@@ -298,7 +334,10 @@ export function RegistrationSteps() {
                       <FormItem>
                         <FormLabel className="text-sm font-medium text-[#374151]">Preferred Group Type</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            setSelectedGroupType(value); // Update state to trigger the query
+                          }}
                           defaultValue={field.value}
                         >
                           <FormControl>
@@ -318,224 +357,347 @@ export function RegistrationSteps() {
                     )}
                   />
                   
-                  <div className="mb-5">
-                    <p className="text-sm text-[#6B7280] italic mb-3">
-                      Please select the days and times you're available. We try to accommodate 
-                      preferences, but groups may require some flexibility on your part.
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+                    <p className="text-sm text-blue-800 mb-1 font-medium">Important Information</p>
+                    <p className="text-sm text-blue-700">
+                      We have both scheduled study sessions and flexible options. You're encouraged to join even if 
+                      you can't make the scheduled times. We'll do our best to accommodate everyone.
                     </p>
                   </div>
                   
                   <FormField
                     control={form.control}
-                    name="availableDays"
+                    name="flexibilityOption"
                     render={({ field }) => (
                       <FormItem className="space-y-3 mb-6">
-                        <FormLabel className="text-sm font-medium text-[#374151]">Available Days (Select all that apply)</FormLabel>
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                        <FormLabel className="text-sm font-medium text-[#374151]">Scheduling Preference</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="space-y-3"
+                          >
                             <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('monday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('monday');
-                                  } else {
-                                    const index = newValue.indexOf('monday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Monday</FormLabel>
+                              <RadioGroupItem value="preferred_session" id="preferred_session" className="mt-1" />
+                              <FormLabel htmlFor="preferred_session" className="text-sm text-[#374151] font-normal">
+                                I'd like to join a scheduled study session (select below)
+                              </FormLabel>
                             </div>
-                            
                             <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('tuesday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('tuesday');
-                                  } else {
-                                    const index = newValue.indexOf('tuesday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Tuesday</FormLabel>
+                              <RadioGroupItem value="flexible_schedule" id="flexible_schedule" className="mt-1" />
+                              <FormLabel htmlFor="flexible_schedule" className="text-sm text-[#374151] font-normal">
+                                I need a flexible schedule (select available days/times below)
+                              </FormLabel>
                             </div>
-                            
                             <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('wednesday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('wednesday');
-                                  } else {
-                                    const index = newValue.indexOf('wednesday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Wednesday</FormLabel>
+                              <RadioGroupItem value="either" id="either" className="mt-1" />
+                              <FormLabel htmlFor="either" className="text-sm text-[#374151] font-normal">
+                                I'm open to either option
+                              </FormLabel>
                             </div>
-                            
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('thursday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('thursday');
-                                  } else {
-                                    const index = newValue.indexOf('thursday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Thursday</FormLabel>
-                            </div>
-                            
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('friday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('friday');
-                                  } else {
-                                    const index = newValue.indexOf('friday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Friday</FormLabel>
-                            </div>
-                            
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('saturday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('saturday');
-                                  } else {
-                                    const index = newValue.indexOf('saturday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Saturday</FormLabel>
-                            </div>
-                            
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('sunday')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('sunday');
-                                  } else {
-                                    const index = newValue.indexOf('sunday');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Sunday</FormLabel>
-                            </div>
-                          </div>
-                        </div>
-                        {form.formState.errors.availableDays && (
-                          <p className="text-xs text-red-500 mt-1">{form.formState.errors.availableDays.message}</p>
+                          </RadioGroup>
+                        </FormControl>
+                        {form.formState.errors.flexibilityOption && (
+                          <p className="text-xs text-red-500 mt-1">{form.formState.errors.flexibilityOption.message}</p>
                         )}
                       </FormItem>
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="availableTimes"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="text-sm font-medium text-[#374151]">Available Times (Select all that apply)</FormLabel>
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('morning')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('morning');
-                                  } else {
-                                    const index = newValue.indexOf('morning');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Morning (8am-12pm)</FormLabel>
-                            </div>
-                            
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('afternoon')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('afternoon');
-                                  } else {
-                                    const index = newValue.indexOf('afternoon');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Afternoon (12pm-5pm)</FormLabel>
-                            </div>
-                            
-                            <div className="flex items-start space-x-2">
-                              <Checkbox
-                                checked={Array.isArray(field.value) && field.value.includes('evening')}
-                                onCheckedChange={(checked) => {
-                                  const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                  if (checked) {
-                                    newValue.push('evening');
-                                  } else {
-                                    const index = newValue.indexOf('evening');
-                                    if (index !== -1) newValue.splice(index, 1);
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                                className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                              />
-                              <FormLabel className="text-sm text-[#374151]">Evening (5pm-9pm)</FormLabel>
-                            </div>
-                          </div>
+                  {/* Show study sessions if there are any and group type is selected */}
+                  {selectedGroupType && 
+                   (form.watch("flexibilityOption") === "preferred_session" || form.watch("flexibilityOption") === "either") && (
+                    <div className="mb-6">
+                      <h3 className="text-base font-medium text-[#374151] mb-3">Available Study Sessions</h3>
+                      
+                      {studySessions.isLoading && (
+                        <div className="text-center p-4">
+                          <p className="text-sm text-[#6B7280]">Loading available sessions...</p>
                         </div>
-                        {form.formState.errors.availableTimes && (
-                          <p className="text-xs text-red-500 mt-1">{form.formState.errors.availableTimes.message}</p>
+                      )}
+                      
+                      {studySessions.isError && (
+                        <div className="text-center p-4 text-red-500">
+                          <p className="text-sm">Error loading sessions. Please try again.</p>
+                        </div>
+                      )}
+                      
+                      {studySessions.isSuccess && studySessions.data.length === 0 && (
+                        <div className="text-center p-4">
+                          <p className="text-sm text-[#6B7280]">No scheduled sessions available at this time.</p>
+                        </div>
+                      )}
+                      
+                      {studySessions.isSuccess && studySessions.data.length > 0 && (
+                        <FormField
+                          control={form.control}
+                          name="sessionId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="space-y-4">
+                                {studySessions.data.map((session: StudySession) => (
+                                  <div 
+                                    key={session.id} 
+                                    className={`border rounded-md p-4 cursor-pointer transition-colors ${
+                                      field.value === session.id 
+                                        ? 'border-primary bg-primary/5' 
+                                        : 'border-gray-200 hover:border-primary/50'
+                                    }`}
+                                    onClick={() => field.onChange(session.id)}
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h4 className="font-medium text-[#374151]">{session.title}</h4>
+                                      {session.capacity && (
+                                        <Badge variant="outline" className="text-xs">
+                                          Capacity: {session.capacity}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {session.description && (
+                                      <p className="text-sm text-[#6B7280] mb-2">{session.description}</p>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                      <div>
+                                        <span className="text-[#374151] font-medium">When: </span>
+                                        <span className="text-[#6B7280]">{session.date}, {session.time}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[#374151] font-medium">Where: </span>
+                                        <span className="text-[#6B7280]">{session.location}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Show days and times selection if user chose flexible schedule or either */}
+                  {(form.watch("flexibilityOption") === "flexible_schedule" || form.watch("flexibilityOption") === "either") && (
+                    <div className="border-t border-gray-200 pt-6 mt-6">
+                      <h3 className="text-base font-medium text-[#374151] mb-3">Your Availability</h3>
+                      <p className="text-sm text-[#6B7280] italic mb-4">
+                        Please select the days and times you're available. We try to accommodate 
+                        preferences, but groups may require some flexibility on your part.
+                      </p>
+                      
+                      <FormField
+                        control={form.control}
+                        name="availableDays"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3 mb-6">
+                            <FormLabel className="text-sm font-medium text-[#374151]">Available Days (Select all that apply)</FormLabel>
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('monday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('monday');
+                                      } else {
+                                        const index = newValue.indexOf('monday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Monday</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('tuesday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('tuesday');
+                                      } else {
+                                        const index = newValue.indexOf('tuesday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Tuesday</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('wednesday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('wednesday');
+                                      } else {
+                                        const index = newValue.indexOf('wednesday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Wednesday</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('thursday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('thursday');
+                                      } else {
+                                        const index = newValue.indexOf('thursday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Thursday</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('friday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('friday');
+                                      } else {
+                                        const index = newValue.indexOf('friday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Friday</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('saturday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('saturday');
+                                      } else {
+                                        const index = newValue.indexOf('saturday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Saturday</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('sunday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('sunday');
+                                      } else {
+                                        const index = newValue.indexOf('sunday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Sunday</FormLabel>
+                                </div>
+                              </div>
+                            </div>
+                            {form.formState.errors.availableDays && (
+                              <p className="text-xs text-red-500 mt-1">{form.formState.errors.availableDays.message}</p>
+                            )}
+                          </FormItem>
                         )}
-                      </FormItem>
-                    )}
-                  />
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="availableTimes"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3 mb-6">
+                            <FormLabel className="text-sm font-medium text-[#374151]">Available Times (Select all that apply)</FormLabel>
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('morning')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('morning');
+                                      } else {
+                                        const index = newValue.indexOf('morning');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Morning (8am-12pm)</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('afternoon')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('afternoon');
+                                      } else {
+                                        const index = newValue.indexOf('afternoon');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Afternoon (12pm-5pm)</FormLabel>
+                                </div>
+                                
+                                <div className="flex items-start space-x-2">
+                                  <Checkbox
+                                    checked={Array.isArray(field.value) && field.value.includes('evening')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('evening');
+                                      } else {
+                                        const index = newValue.indexOf('evening');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
+                                    className="mt-1 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                  />
+                                  <FormLabel className="text-sm text-[#374151]">Evening (5pm-9pm)</FormLabel>
+                                </div>
+                              </div>
+                            </div>
+                            {form.formState.errors.availableTimes && (
+                              <p className="text-xs text-red-500 mt-1">{form.formState.errors.availableTimes.message}</p>
+                            )}
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                   
                   <FormField
                     control={form.control}
@@ -545,9 +707,8 @@ export function RegistrationSteps() {
                         <FormLabel className="text-sm font-medium text-[#374151]">Additional Notes</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Any additional information you'd like us to know..." 
-                            className="min-h-[44px] form-control block w-full px-3 py-2 border border-[#9CA3AF] rounded-md shadow-sm placeholder-[#9CA3AF] focus:ring-primary focus:border-primary"
-                            rows={3}
+                            placeholder="Anything else we should know about your preferences or scheduling constraints?" 
+                            className="min-h-[100px] w-full p-3 border border-[#9CA3AF] rounded-md shadow-sm placeholder-[#9CA3AF] focus:ring-primary focus:border-primary"
                             {...field} 
                           />
                         </FormControl>
@@ -567,10 +728,10 @@ export function RegistrationSteps() {
                   </Button>
                   <Button 
                     type="submit"
-                    disabled={registration.isPending} 
+                    disabled={registration.isPending}
                     className="min-h-[44px] px-4 py-2 bg-primary text-white font-medium rounded-md shadow-sm hover:bg-blue-600"
                   >
-                    {registration.isPending ? "Submitting..." : "Submit Registration"}
+                    {registration.isPending ? "Submitting..." : "Register"}
                   </Button>
                 </div>
               </div>
