@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// Dialog component no longer needed
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
@@ -91,8 +91,7 @@ export function RegistrationSteps() {
     );
   }, [allStudySessions.data, selectedGroupType]);
   
-  // Dialog state for flexible scheduling guidance
-  const [showFlexibleGuidance, setShowFlexibleGuidance] = useState(false);
+  // No dialog state needed anymore
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -161,39 +160,7 @@ export function RegistrationSteps() {
       <div className="p-6">
         <FormProgress step={step} totalSteps={totalSteps} />
         
-        {/* Flexible scheduling guidance dialog */}
-        <Dialog open={showFlexibleGuidance} onOpenChange={setShowFlexibleGuidance}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>About Flexible Scheduling</DialogTitle>
-            </DialogHeader>
-            <div className="text-[#374151] space-y-4">
-              <p>
-                While we're happy to accommodate flexible scheduling needs, joining an 
-                <strong> existing scheduled session</strong> is usually the best experience for step study.
-              </p>
-              <p>
-                Existing groups have established meeting times and consistent attendance, which helps 
-                build the trust and community that makes step studies most effective.
-              </p>
-              <p>
-                If you select the flexible option, we'll do our best to find or create a group that fits your 
-                schedule, but this may take longer and depends on finding others with similar availability.
-              </p>
-            </div>
-            <DialogFooter>
-              <Button 
-                onClick={() => {
-                  setShowFlexibleGuidance(false);
-                  // Don't automatically change their selection, just provide guidance
-                }}
-                className="bg-primary hover:bg-blue-600 text-white mt-4"
-              >
-                I Understand
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* No dialog needed - we're showing the message inline */}
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -564,9 +531,17 @@ export function RegistrationSteps() {
                     </div>
                   )}
                   
-                  {/* Show days and times selection if user chose flexible schedule or either */}
-                  {(form.watch("flexibilityOption") === "flexible_schedule" || form.watch("flexibilityOption") === "either") && (
-                    <div className="border-t border-gray-200 pt-6 mt-6">
+                  {/* Show custom times only when explicitly selected */}
+                  {showCustomTimes && (
+                    <div className="border rounded-lg p-5 mt-4 bg-white shadow-sm">
+                      <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+                        <p className="text-sm text-amber-800 font-medium">Custom Availability</p>
+                        <p className="text-sm text-amber-700 mt-1">
+                          There are currently no other scheduled studies. You're indicating times that could work for you
+                          to be informed if one gets scheduled during those periods.
+                        </p>
+                      </div>
+                      
                       <h3 className="text-base font-medium text-[#374151] mb-3">Your Availability</h3>
                       <p className="text-sm text-[#6B7280] italic mb-4">
                         Please select the days and times you're available. We try to accommodate 
