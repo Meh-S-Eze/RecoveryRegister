@@ -13,7 +13,9 @@ import {
 // modify the interface with any CRUD methods
 // you might need
 export interface IStorage {
+  // User methods
   getUser(id: number): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
@@ -54,6 +56,10 @@ export class MemStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
+  
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
@@ -63,7 +69,21 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
+    const now = new Date();
+    
+    const user: User = { 
+      ...insertUser,
+      id,
+      username: insertUser.username ?? null,
+      email: insertUser.email ?? null,
+      role: insertUser.role ?? "user",
+      registrationId: insertUser.registrationId ?? null,
+      isAnonymous: insertUser.isAnonymous ?? false,
+      preferredContact: insertUser.preferredContact ?? "username",
+      isActive: insertUser.isActive ?? true,
+      createdAt: now
+    };
+    
     this.users.set(id, user);
     return user;
   }
@@ -83,17 +103,18 @@ export class MemStorage implements IStorage {
     // Convert undefined values to null to satisfy the Registration type
     const registration: Registration = { 
       id,
-      name: insertRegistration.name ?? null,
+      name: insertRegistration.name,
       email: insertRegistration.email ?? null,
       phone: insertRegistration.phone ?? null,
-      contactConsent: insertRegistration.contactConsent ?? null,
+      contactMethod: insertRegistration.contactMethod ?? null,
+      contactConsent: insertRegistration.contactConsent ?? false,
       groupType: insertRegistration.groupType ?? null,
       sessionId: insertRegistration.sessionId ?? null,
-      availableDays: insertRegistration.availableDays ?? null,
-      availableTimes: insertRegistration.availableTimes ?? null,
-      additionalNotes: insertRegistration.additionalNotes ?? null,
+      availableDays: insertRegistration.availableDays ?? [],
+      availableTimes: insertRegistration.availableTimes ?? [],
       flexibilityOption: insertRegistration.flexibilityOption ?? null,
-      privacyConsent: insertRegistration.privacyConsent,
+      customTimesNote: insertRegistration.customTimesNote ?? null,
+      privacyConsent: insertRegistration.privacyConsent ?? false,
       createdAt: now
     };
     

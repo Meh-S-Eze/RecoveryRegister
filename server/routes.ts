@@ -57,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         // Try by email if not found by username
         const users = await storage.getUsers();
-        user = users.find(u => u.email === identifier);
+        user = users.find((u) => u.email === identifier);
       }
       
       if (!user) {
@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (data.email) {
         const users = await storage.getUsers();
-        const emailExists = users.some(u => u.email === data.email);
+        const emailExists = users.some((u) => u.email === data.email);
         if (emailExists) {
           return res.status(400).json({ message: "Email already registered" });
         }
