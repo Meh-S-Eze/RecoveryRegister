@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "nodeOmnibus": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bsmi021/mcp-node-omnibus-server"
+      ]
+    }
+  }
+} 
