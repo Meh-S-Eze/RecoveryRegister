@@ -2,20 +2,10 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createTables } from "./migrate";
-// @ts-ignore - Importing JS module
-import configureSessionMiddleware from "./core/middleware/session.js";
-// @ts-ignore - import cookie-parser
-import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-
-// Initialize session middleware
-app.use(configureSessionMiddleware({
-  // Any custom options can be added here
-}));
 
 app.use((req, res, next) => {
   const start = Date.now();
