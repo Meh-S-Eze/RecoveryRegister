@@ -54,7 +54,7 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
     resolver: zodResolver(conditionalAccountSchema),
     defaultValues: {
       createAccount: false,
-      username: name || "",
+      username: email || name || "",
       password: "",
       preferredContact: email ? "email" : "username",
     },
