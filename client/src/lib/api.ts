@@ -1,7 +1,7 @@
 import { FormValues } from "@/features/registration/types";
 
-// Base API URL - should be configured via environment variables in a real app
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+// Base API URL - configured via Vite environment variables
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Register a new participant for a study session
