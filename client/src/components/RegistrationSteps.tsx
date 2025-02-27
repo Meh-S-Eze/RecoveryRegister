@@ -68,11 +68,17 @@ export function RegistrationSteps() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
   
+  // State for registration data after submission
+  const [registrationData, setRegistrationData] = useState<any>(null);
+  
   // State for selected group type - needed to filter study sessions
   const [selectedGroupType, setSelectedGroupType] = useState<string>("");
   
   // State to track if the user wants to specify custom times
   const [showCustomTimes, setShowCustomTimes] = useState(false);
+  
+  // State to track if the personal info step is completed
+  const [personalInfoCompleted, setPersonalInfoCompleted] = useState(false);
   
   // Query to fetch all active study sessions
   const allStudySessions = useQuery({
@@ -115,8 +121,17 @@ export function RegistrationSteps() {
       return apiRequest("POST", "/api/registrations", values)
         .then(res => res.json());
     },
-    onSuccess: () => {
-      setIsSubmitted(true);
+    onSuccess: (data) => {
+      // Save registration data for optional account creation
+      setRegistrationData(data);
+      
+      // Move to account creation step after the personal info is complete
+      if (personalInfoCompleted) {
+        setIsSubmitted(true);
+      } else {
+        // Show account creation option after completing the form
+        setPersonalInfoCompleted(true);
+      }
     },
     onError: (error) => {
       toast({
@@ -126,6 +141,18 @@ export function RegistrationSteps() {
       });
     }
   });
+  
+  // Handle account creation completion
+  const handleAccountCreated = (userData: any) => {
+    // Account created successfully, show confirmation
+    setIsSubmitted(true);
+  };
+  
+  // Handle skipping account creation
+  const handleSkipAccountCreation = () => {
+    // User skipped account creation, just show confirmation
+    setIsSubmitted(true);
+  };
   
   const totalSteps = 3;
   
@@ -186,8 +213,30 @@ export function RegistrationSteps() {
     }
   };
   
+  // Show confirmation message if registration is complete
   if (isSubmitted) {
     return <ConfirmationMessage />;
+  }
+  
+  // Show account creation step if registration has been submitted but account creation not yet handled
+  if (personalInfoCompleted && registrationData) {
+    return (
+      <Card className="bg-white rounded-lg shadow-md overflow-hidden max-w-2xl mx-auto">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-[#374151] mb-4">Registration Complete</h2>
+          <p className="mb-4 text-[#374151]">
+            Your registration has been successfully submitted. Thank you for signing up for a Step Study!
+          </p>
+          
+          <AccountCreation
+            onAccountCreated={handleAccountCreated}
+            onSkip={handleSkipAccountCreation}
+            email={form.getValues().email || null}
+            registrationId={registrationData.id}
+          />
+        </div>
+      </Card>
+    );
   }
   
   return (
