@@ -1,0 +1,56 @@
+I need you to help me with a privacy-focused mobile registration system for Celebrate Recovery step study program.
+
+# Project Overview
+This is a confidential registration system for Celebrate Recovery, a Christian 12-step recovery program. The application prioritizes user privacy and provides a compassionate registration experience for participants joining step study groups. The system allows users to register for men's or women's study groups with flexible scheduling options, and optionally create an account after registration is completed.
+
+# Key Features
+- Privacy-focused design with optional anonymity
+- Mobile-responsive interface with accessibility considerations
+- Separate registration flows for men's and women's step study groups
+- Flexible scheduling options (fixed sessions or custom availability)
+- Optional account creation after registration submission
+- Admin dashboard for managing study sessions and registrations
+
+# Technology Stack
+- Frontend: React with TypeScript
+- UI Components: Shadcn/UI with Tailwind CSS
+- State Management: React Query
+- Forms: React Hook Form with Zod validation
+- Backend: Express.js
+- Database: PostgreSQL with Drizzle ORM
+- Authentication: Passport.js with bcrypt
+
+# Folder Structure
+```yaml
+project/
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/                  # Shadcn UI components
+│   │   │   ├── AccountCreation.tsx  # Optional account creation component
+│   │   │   ├── ConfirmationMessage.tsx
+│   │   │   ├── Footer.tsx
+│   │   │   ├── FormProgress.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── PrivacyNotice.tsx
+│   │   │   └── RegistrationSteps.tsx  # Main registration flow component
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── lib/                     # Utility functions
+│   │   ├── pages/
+│   │   │   ├── Admin.tsx            # Admin dashboard
+│   │   │   ├── Home.tsx             # Landing page
+│   │   │   ├── RegistrationForm.tsx # Entry point for registration
+│   │   │   └── not-found.tsx        # 404 page
+│   │   ├── App.tsx                  # Main app component with routing
+│   │   └── main.tsx                 # Entry point
+├── server/
+│   ├── db.ts                        # Database connection setup
+│   ├── index.ts                     # Express server setup
+│   ├── migrate.ts                   # Database migration utilities
+│   ├── pgStorage.ts                 # PostgreSQL storage implementation
+│   ├── routes.ts                    # API routes definition
+│   ├── storage.ts                   # Storage interface definition
+│   └── vite.ts                      # Vite middleware for serving frontend
+├── shared/
+│   └── schema.ts                    # Shared data models and validation schemas
+└── [configuration files]            # Package.json, tsconfig, etc.
