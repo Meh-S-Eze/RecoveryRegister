@@ -122,7 +122,8 @@ export function AccountCreation({ onAccountCreated, onSkip, email, registrationI
     <div className="mt-4 mb-6">
       <h3 className="text-lg font-semibold text-[#374151] mb-2">Create Account (Optional)</h3>
       <p className="mb-4 text-[#374151]">
-        Creating an account is optional but allows you to access your registration details later.
+        Creating an account is completely optional but allows you to receive updates and 
+        access or modify your registration details later if needed.
       </p>
 
       <Form {...form}>
@@ -276,12 +277,12 @@ export function AccountCreation({ onAccountCreated, onSkip, email, registrationI
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-4">
             <Button 
               type="button" 
               variant="outline"
               onClick={onSkip}
-              className="min-h-[44px]"
+              className="min-h-[44px] text-blue-700 border-blue-300 hover:bg-blue-50"
             >
               {createAccount ? "Skip This Step" : "Continue Without Account"}
             </Button>

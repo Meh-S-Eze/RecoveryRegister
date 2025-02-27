@@ -125,13 +125,8 @@ export function RegistrationSteps() {
       // Save registration data for optional account creation
       setRegistrationData(data);
       
-      // Move to account creation step after the personal info is complete
-      if (personalInfoCompleted) {
-        setIsSubmitted(true);
-      } else {
-        // Show account creation option after completing the form
-        setPersonalInfoCompleted(true);
-      }
+      // Always show the account creation option after registration is complete
+      setPersonalInfoCompleted(true);
     },
     onError: (error) => {
       toast({
@@ -227,6 +222,14 @@ export function RegistrationSteps() {
           <p className="mb-4 text-[#374151]">
             Your registration has been successfully submitted. Thank you for signing up for a Step Study!
           </p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+            <h3 className="text-md font-medium text-blue-800 mb-2">Optional Account Creation</h3>
+            <p className="text-sm text-blue-700">
+              Creating an account allows you to receive updates about your step study and gives you the ability to update 
+              or remove your registration if needed. This step is completely optional.
+            </p>
+          </div>
           
           <AccountCreation
             onAccountCreated={handleAccountCreated}
