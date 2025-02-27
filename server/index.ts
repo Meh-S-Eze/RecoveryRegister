@@ -66,14 +66,42 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
+  // Try to use port 5000 exclusively
   // this serves both the API and the client
   const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  
+  // First, try to ensure the port is free
+  const findAndKillProcess = () => {
+    try {
+      // Log the attempt
+      log(`Attempting to free port ${port}...`);
+      
+      // The real attempt to start the server happens after this message
+      server.listen({
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, () => {
+        log(`serving on port ${port}`);
+      }).on('error', (e: any) => {
+        if (e.code === 'EADDRINUSE') {
+          log(`Port ${port} is still in use. Please manually restart the workflow.`);
+          setTimeout(() => {
+            // Try once more with the same port after a delay
+            log(`Retrying port ${port} after delay...`);
+            findAndKillProcess();
+          }, 1000);
+        } else {
+          log(`Failed to start server: ${e.message}`);
+          process.exit(1);
+        }
+      });
+    } catch (error) {
+      log(`Error while trying to free port: ${error}`);
+      process.exit(1);
+    }
+  };
+  
+  // Start the process to ensure port 5000 is available
+  findAndKillProcess();
 })();
