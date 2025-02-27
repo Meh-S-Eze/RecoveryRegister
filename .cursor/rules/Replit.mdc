@@ -1,0 +1,54 @@
+---
+description: Always Use - Replit Environtment Configuration
+globs: 
+alwaysApply: true
+---
+
+title: Replit SSH Project Guidelines
+
+environment:
+  type: replit_ssh
+  description: "Project hosted on Replit, being edited remotely via SSH"
+
+file_synchronization:
+  # Based on https://docs.replit.com/replit-workspace/ssh
+  behavior: "bidirectional"
+  notes: "Changes made in local editor are instantly synced to Replit and vice versa"
+
+editor_awareness:
+  possible_editors:
+    - vscode_remote_ssh
+    - local_terminal
+    - emacs
+    - vim
+    - other_local_ide
+  guidance: "Respect user's editor setup and preferences when suggesting changes"
+
+replit_specifics:
+  container_nature: true
+  proxy_routing: true
+  filesystem_persistence: true
+  x11_forwarding_compatibility: "May conflict with Replit Graphics feature"
+
+development_workflow:
+  considerations:
+    - "Automatic file synchronization occurs between Replit and local editor"
+    - "File management operations (add/delete/move) are synchronized in real-time"
+    - "Folder structure changes propagate across environments"
+    - "VSCode configuration is persisted in the Repl's filesystem"
+
+debugging_guidance:
+  remote_nature: "Remember code is executing in Replit container, not locally"
+  port_access: "Web services running in Replit container are accessible via Replit URLs"
+  
+security_considerations:
+  garage_project: true
+  security_level: "relaxed"
+  risk_tolerance: "high"
+  notes: "Security is not a primary concern for this garage project"
+
+assistant_behavior:
+  editor_agnostic: true
+  filesystem_awareness: true
+  replit_knowledge: "Understand the container-based nature of Replit"
+  ssh_connectivity: "Be aware of the SSH connection through Replit's proxy system"

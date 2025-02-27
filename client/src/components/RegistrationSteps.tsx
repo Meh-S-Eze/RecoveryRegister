@@ -214,7 +214,7 @@ export function RegistrationSteps() {
                   name="privacyConsent"
                   render={({ field }) => (
                     <FormItem className="mb-6 space-y-0">
-                      <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
+                      <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                         <FormControl>
                           <Checkbox 
                             checked={field.value}
@@ -333,7 +333,7 @@ export function RegistrationSteps() {
                     name="contactConsent"
                     render={({ field }) => (
                       <FormItem className="space-y-0">
-                        <div onClick={() => field.onChange(!field.value)} className="flex items-start space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded">
+                        <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                           <FormControl>
                             <Checkbox 
                               checked={field.value}
@@ -591,20 +591,7 @@ export function RegistrationSteps() {
                             <FormLabel className="text-sm font-medium text-[#374151]">Available Days (Select all that apply)</FormLabel>
                             <div className="space-y-3">
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('monday');
-                                    if (!included) {
-                                      newValue.push('monday');
-                                    } else {
-                                      const index = newValue.indexOf('monday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('monday')}
                                     onCheckedChange={(checked) => {
@@ -619,23 +606,10 @@ export function RegistrationSteps() {
                                     }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Monday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Monday</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('tuesday');
-                                    if (!included) {
-                                      newValue.push('tuesday');
-                                    } else {
-                                      const index = newValue.indexOf('tuesday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('tuesday')}
                                     onCheckedChange={(checked) => {
@@ -650,23 +624,10 @@ export function RegistrationSteps() {
                                     }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Tuesday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Tuesday</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('wednesday');
-                                    if (!included) {
-                                      newValue.push('wednesday');
-                                    } else {
-                                      const index = newValue.indexOf('wednesday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('wednesday')}
                                     onCheckedChange={(checked) => {
@@ -681,91 +642,79 @@ export function RegistrationSteps() {
                                     }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Wednesday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Wednesday</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('thursday');
-                                    if (!included) {
-                                      newValue.push('thursday');
-                                    } else {
-                                      const index = newValue.indexOf('thursday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('thursday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('thursday');
+                                      } else {
+                                        const index = newValue.indexOf('thursday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Thursday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Thursday</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('friday');
-                                    if (!included) {
-                                      newValue.push('friday');
-                                    } else {
-                                      const index = newValue.indexOf('friday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('friday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('friday');
+                                      } else {
+                                        const index = newValue.indexOf('friday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Friday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Friday</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('saturday');
-                                    if (!included) {
-                                      newValue.push('saturday');
-                                    } else {
-                                      const index = newValue.indexOf('saturday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('saturday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('saturday');
+                                      } else {
+                                        const index = newValue.indexOf('saturday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Saturday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Saturday</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('sunday');
-                                    if (!included) {
-                                      newValue.push('sunday');
-                                    } else {
-                                      const index = newValue.indexOf('sunday');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('sunday')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('sunday');
+                                      } else {
+                                        const index = newValue.indexOf('sunday');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Sunday</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Sunday</FormLabel>
                                 </div>
                               </div>
                             </div>
@@ -784,67 +733,58 @@ export function RegistrationSteps() {
                             <FormLabel className="text-sm font-medium text-[#374151]">Available Times (Select all that apply)</FormLabel>
                             <div className="space-y-3">
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('morning');
-                                    if (!included) {
-                                      newValue.push('morning');
-                                    } else {
-                                      const index = newValue.indexOf('morning');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('morning')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('morning');
+                                      } else {
+                                        const index = newValue.indexOf('morning');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Morning (8am-12pm)</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Morning (8am-12pm)</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('afternoon');
-                                    if (!included) {
-                                      newValue.push('afternoon');
-                                    } else {
-                                      const index = newValue.indexOf('afternoon');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('afternoon')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('afternoon');
+                                      } else {
+                                        const index = newValue.indexOf('afternoon');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Afternoon (12pm-5pm)</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Afternoon (12pm-5pm)</FormLabel>
                                 </div>
                                 
-                                <div 
-                                  className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                                  onClick={() => {
-                                    const newValue = Array.isArray(field.value) ? [...field.value] : [];
-                                    const included = newValue.includes('evening');
-                                    if (!included) {
-                                      newValue.push('evening');
-                                    } else {
-                                      const index = newValue.indexOf('evening');
-                                      if (index !== -1) newValue.splice(index, 1);
-                                    }
-                                    field.onChange(newValue);
-                                  }}
-                                >
+                                <div className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
                                   <Checkbox
                                     checked={Array.isArray(field.value) && field.value.includes('evening')}
+                                    onCheckedChange={(checked) => {
+                                      const newValue = Array.isArray(field.value) ? [...field.value] : [];
+                                      if (checked) {
+                                        newValue.push('evening');
+                                      } else {
+                                        const index = newValue.indexOf('evening');
+                                        if (index !== -1) newValue.splice(index, 1);
+                                      }
+                                      field.onChange(newValue);
+                                    }}
                                     className="h-5 w-5 mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <FormLabel className="text-sm text-[#374151] cursor-pointer flex-1">Evening (5pm-9pm)</FormLabel>
+                                  <FormLabel className="text-sm text-[#374151] flex-1">Evening (5pm-9pm)</FormLabel>
                                 </div>
                               </div>
                             </div>

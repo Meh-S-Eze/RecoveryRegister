@@ -25,6 +25,12 @@ export const studySessions = pgTable("study_sessions", {
   location: text("location").notNull(), // General location (e.g., "Church Fellowship Hall")
   address: text("address"), // Specific street address
   date: text("date").notNull(), // Storing as text for flexibility (e.g. "Every Monday starting June 5")
+  
+  // New fields for better date handling
+  startDate: timestamp("start_date"), // Specific start date
+  recurringDay: text("recurring_day"), // Day of week for recurring sessions
+  isRecurring: boolean("is_recurring").default(true),
+  
   time: text("time").notNull(), // Storing as text for flexibility (e.g. "7:00 PM - 9:00 PM")
   groupType: text("group_type").notNull(), // "men" or "women"
   capacity: integer("capacity"),

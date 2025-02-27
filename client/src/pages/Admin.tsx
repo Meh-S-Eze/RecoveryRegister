@@ -29,7 +29,8 @@ import {
   ArrowLeftIcon,
   PhoneIcon,
   MailIcon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  RepeatIcon
 } from "lucide-react";
 import type { Registration, StudySession, InsertStudySession } from "@shared/schema";
 import { Helmet } from "react-helmet";
@@ -63,6 +64,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { InputDatePicker } from "@/components/ui/date-picker";
+import { DaySelector, type DayOfWeek } from "@/components/ui/day-selector";
 
 // Form schemas for study session management
 const studySessionSchema = z.object({
@@ -70,7 +74,15 @@ const studySessionSchema = z.object({
   description: z.string().optional(),
   location: z.string().min(3, "Location is required"), // General location name
   address: z.string().optional(), // Specific street address
+  
+  // New fields for structured date selection
+  startDate: z.date().optional(),
+  recurringDay: z.string().optional(),
+  isRecurring: z.boolean().default(true),
+  
+  // Keep legacy date field for backward compatibility
   date: z.string().min(3, "Date information is required"),
+  
   time: z.string().min(3, "Time information is required"),
   groupType: z.string().min(1, "Please select a group type"),
   hasCapacity: z.boolean().default(false),
@@ -79,6 +91,57 @@ const studySessionSchema = z.object({
 });
 
 type StudySessionFormValues = z.infer<typeof studySessionSchema>;
+
+// Extract date information from a session string
+const parseDateString = (dateStr: string) => {
+  let startDate: Date | undefined = undefined;
+  let recurringDay: string | undefined = undefined;
+  let isRecurring = false;
+  
+  // Match patterns like "Every Monday starting March 5"
+  const recurringMatch = dateStr.match(/Every\s+(\w+)(?:\s+starting\s+(\w+\s+\d+))?/i);
+  
+  if (recurringMatch) {
+    isRecurring = true;
+    
+    // Extract the day
+    const day = recurringMatch[1]?.toLowerCase();
+    if (day) {
+      recurringDay = day;
+    }
+    
+    // Extract the start date if present
+    if (recurringMatch[2]) {
+      try {
+        // Try to parse the date - add current year as it's not in the string
+        const currentYear = new Date().getFullYear();
+        const dateWithYear = `${recurringMatch[2]}, ${currentYear}`;
+        startDate = new Date(dateWithYear);
+        
+        // Check if the date is valid
+        if (isNaN(startDate.getTime())) {
+          startDate = undefined;
+        }
+      } catch (e) {
+        startDate = undefined;
+      }
+    }
+  } else {
+    // Try to parse as a specific date
+    try {
+      const parsedDate = new Date(dateStr);
+      
+      // If valid date, use it as startDate
+      if (!isNaN(parsedDate.getTime())) {
+        startDate = parsedDate;
+      }
+    } catch (e) {
+      // Parsing failed, leave startDate undefined
+    }
+  }
+  
+  return { startDate, recurringDay, isRecurring };
+};
 
 export default function Admin() {
   const { toast } = useToast();
@@ -107,6 +170,9 @@ export default function Admin() {
       description: "",
       location: "",
       address: "",
+      startDate: undefined,
+      recurringDay: undefined,
+      isRecurring: true,
       date: "",
       time: "",
       groupType: "",
@@ -204,12 +270,38 @@ export default function Admin() {
     }
   });
 
+  // Format date information for display and submission
+  const formatDateInfo = (values: StudySessionFormValues) => {
+    let dateString = "";
+    
+    if (values.isRecurring && values.recurringDay) {
+      // Format as "Every [Day]"
+      dateString = `Every ${values.recurringDay}`;
+      
+      // Add start date if provided
+      if (values.startDate) {
+        const formattedDate = format(values.startDate, "MMMM d");
+        dateString += ` starting ${formattedDate}`;
+      }
+    } else if (values.startDate) {
+      // Format as specific date only
+      dateString = format(values.startDate, "MMMM d, yyyy");
+    } else {
+      // Fallback to manually entered date
+      dateString = values.date;
+    }
+    
+    return dateString || values.date; // Return original date as fallback
+  };
+
   // Handle session form submission
   const onSessionFormSubmit = (values: StudySessionFormValues) => {
     // If hasCapacity is false, ensure capacity is undefined
     const submissionValues = { 
       ...values,
-      capacity: values.hasCapacity ? values.capacity : undefined
+      capacity: values.hasCapacity ? values.capacity : undefined,
+      // Format the date field based on the selected options
+      date: formatDateInfo(values)
     };
     
     if (editingSession) {
@@ -222,11 +314,18 @@ export default function Admin() {
   // Open dialog for editing a session
   const handleEditSession = (session: StudySession) => {
     setEditingSession(session);
+    
+    // Parse date information from the date string
+    const { startDate, recurringDay, isRecurring } = parseDateString(session.date);
+    
     sessionForm.reset({
       title: session.title,
       description: session.description || "",
       location: session.location,
       address: session.address || "",
+      startDate,
+      recurringDay,
+      isRecurring,
       date: session.date,
       time: session.time,
       groupType: session.groupType,
@@ -245,6 +344,9 @@ export default function Admin() {
       description: "",
       location: "",
       address: "",
+      startDate: undefined,
+      recurringDay: undefined,
+      isRecurring: true, // Default to recurring sessions
       date: "",
       time: "",
       groupType: "",
@@ -745,38 +847,127 @@ export default function Admin() {
                 )}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={sessionForm.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date / Schedule</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Every Tuesday starting March 5" {...field} />
-                      </FormControl>
+              {/* Recurring vs. One-time toggle */}
+              <FormField
+                control={sessionForm.control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center">
+                        <RepeatIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <FormLabel>Recurring Schedule</FormLabel>
+                      </div>
                       <FormDescription>
-                        Use format like "Every Tuesday" or specific dates
+                        Session repeats weekly on the selected day
                       </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Day selection (for recurring sessions) */}
+              {sessionForm.watch("isRecurring") && (
                 <FormField
                   control={sessionForm.control}
-                  name="time"
+                  name="recurringDay"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Time</FormLabel>
+                      <FormLabel>Day of Week</FormLabel>
                       <FormControl>
-                        <Input placeholder="7:00 PM - 8:30 PM" {...field} />
+                        <DaySelector 
+                          selected={field.value as DayOfWeek} 
+                          onSelect={(day) => field.onChange(day)}
+                          className="pt-2"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
+              )}
+              
+              {/* Date picker */}
+              <FormField
+                control={sessionForm.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {sessionForm.watch("isRecurring") 
+                        ? "Starting Date" 
+                        : "Session Date"}
+                    </FormLabel>
+                    <FormControl>
+                      <InputDatePicker 
+                        date={field.value} 
+                        onSelect={field.onChange}
+                        placeholder={sessionForm.watch("isRecurring")
+                          ? "Select first session date" 
+                          : "Select session date"}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {sessionForm.watch("isRecurring")
+                        ? "The date of the first session in this recurring series"
+                        : "The specific date for this one-time session"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Legacy date field as fallback and for display */}
+              <FormField
+                control={sessionForm.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date Display (Auto-generated)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder={sessionForm.watch("isRecurring")
+                          ? "Every Tuesday starting March 5"
+                          : "March 5, 2024"}
+                        {...field} 
+                        value={formatDateInfo({
+                          ...sessionForm.getValues(),
+                          date: field.value
+                        })}
+                        onChange={(e) => {
+                          if (!sessionForm.watch("startDate") && !sessionForm.watch("recurringDay")) {
+                            field.onChange(e.target.value);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      This is how the date will appear to users. Edit manually only if needed.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={sessionForm.control}
+                name="time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Time</FormLabel>
+                    <FormControl>
+                      <Input placeholder="7:00 PM - 8:30 PM" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={sessionForm.control}
