@@ -1,19 +1,22 @@
 import { db } from './db';
 import { users, registrations, studySessions } from '@shared/schema';
 import { log } from './vite';
+import postgres from 'postgres';
 
 // Create the main database tables
 export async function createTables() {
   try {
+    const sql = postgres(process.env.DATABASE_URL!);
+
     // Create the tables if they don't exist
     const queries = [
       // Users table
       `CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        passwordHash TEXT NOT NULL,
-        email TEXT NOT NULL,
-        createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        username TEXT,
+        password_hash TEXT,
+        email TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
       )`,
       
       // Registrations table
@@ -22,16 +25,16 @@ export async function createTables() {
         name TEXT NOT NULL,
         email TEXT,
         phone TEXT,
-        contactMethod TEXT,
-        groupType TEXT,
-        sessionId INTEGER,
-        availableDays TEXT[],
-        availableTimes TEXT[],
-        flexibilityOption TEXT,
-        contactConsent BOOLEAN DEFAULT FALSE,
-        privacyConsent BOOLEAN DEFAULT FALSE,
-        customTimesNote TEXT,
-        createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        contact_method TEXT,
+        group_type TEXT,
+        session_id INTEGER,
+        available_days TEXT[],
+        available_times TEXT[],
+        flexibility_option TEXT,
+        contact_consent BOOLEAN DEFAULT FALSE,
+        privacy_consent BOOLEAN DEFAULT FALSE,
+        custom_times_note TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
       )`,
       
       // Study sessions table
@@ -42,23 +45,26 @@ export async function createTables() {
         location TEXT NOT NULL,
         address TEXT,
         date TEXT NOT NULL,
-        start_date TIMESTAMP WITH TIME ZONE,
+        start_date TIMESTAMPTZ,
         recurring_day TEXT,
         is_recurring BOOLEAN DEFAULT TRUE,
         time TEXT NOT NULL,
         group_type TEXT NOT NULL,
         capacity INTEGER,
         is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        created_at TIMESTAMPTZ DEFAULT NOW()
       )`
     ];
 
     // Execute the queries
     for (const query of queries) {
-      await db.execute(query);
+      await sql.unsafe(query);
     }
     
     log('Database tables created successfully');
+    
+    // Close the connection after creating tables
+    await sql.end();
     
     // Seed sample data for study sessions
     await seedStudySessions();

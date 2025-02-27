@@ -5,13 +5,16 @@ import { z } from "zod";
 // Users table (kept from original schema)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  username: text("username"),
+  passwordHash: text("password_hash"),
+  email: text("email"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
-  password: true,
+  passwordHash: true,
+  email: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -26,7 +29,7 @@ export const studySessions = pgTable("study_sessions", {
   address: text("address"), // Specific street address
   date: text("date").notNull(), // Storing as text for flexibility (e.g. "Every Monday starting June 5")
   
-  // New fields for better date handling
+  // Fields for better date handling
   startDate: timestamp("start_date"), // Specific start date
   recurringDay: text("recurring_day"), // Day of week for recurring sessions
   isRecurring: boolean("is_recurring").default(true),
@@ -49,19 +52,20 @@ export type StudySession = typeof studySessions.$inferSelect;
 // Registrations table for Celebrate Recovery step study
 export const registrations = pgTable("registrations", {
   id: serial("id").primaryKey(),
-  name: text("name"),
+  name: text("name").notNull(),
   email: text("email"),
   phone: text("phone"),
-  contactConsent: boolean("contact_consent").default(false),
+  contactMethod: text("contact_method"),
   groupType: text("group_type"),
   // Selected study session (optional)
   sessionId: integer("session_id"),
   // For custom availability if no session selected or as additional information
   availableDays: text("available_days").array(),
   availableTimes: text("available_times").array(),
-  additionalNotes: text("additional_notes"),
   flexibilityOption: text("flexibility_option"), // "preferred_session", "flexible_schedule", or "either"
-  privacyConsent: boolean("privacy_consent").notNull(),
+  contactConsent: boolean("contact_consent").default(false),
+  privacyConsent: boolean("privacy_consent").default(false),
+  customTimesNote: text("custom_times_note"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
