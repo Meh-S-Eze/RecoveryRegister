@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Import authentication components
 import { AuthProvider } from './features/auth/context/AuthContext';
@@ -7,6 +8,9 @@ import RegisterForm from './features/auth/components/RegisterForm';
 import LoginForm from './features/auth/components/LoginForm';
 import PrivacyIndicator, { PrivacyStatus } from './features/auth/components/PrivacyIndicator';
 import ProtectedRoute, { AnonymousOnlyRoute } from './features/auth/components/ProtectedRoute';
+
+// Import registration components
+import { RegistrationPage, RegistrationCompletePage } from './features/registration';
 
 // Example pages
 const Home = () => (
@@ -16,6 +20,7 @@ const Home = () => (
     <div className="auth-actions">
       <Link to="/login" className="btn btn-primary">Log In</Link>
       <Link to="/register" className="btn btn-secondary">Create Account</Link>
+      <Link to="/registration" className="btn btn-accent">Register for Session</Link>
     </div>
   </div>
 );
@@ -68,6 +73,7 @@ const Layout = ({ children }) => {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/dashboard">Dashboard</Link></li>
             <li><Link to="/profile">Profile</Link></li>
+            <li><Link to="/registration">Registration</Link></li>
           </ul>
         </nav>
         <div className="auth-status">
@@ -99,6 +105,10 @@ const App = () => {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
+            
+            {/* Registration routes */}
+            <Route path="/registration" element={<RegistrationPage />} />
+            <Route path="/registration-complete" element={<RegistrationCompletePage />} />
             
             {/* Anonymous only routes (redirect if already logged in) */}
             <Route 
@@ -143,6 +153,7 @@ const App = () => {
           </Routes>
         </Layout>
       </Router>
+      <Toaster position="top-right" />
     </AuthProvider>
   );
 };
