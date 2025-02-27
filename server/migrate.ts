@@ -3,7 +3,7 @@ import { users, registrations, studySessions } from '@shared/schema';
 import { log } from './vite';
 import postgres from 'postgres';
 import bcrypt from 'bcryptjs';
-import { eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm/expressions';
 
 // Create the main database tables
 export async function createTables() {

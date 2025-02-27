@@ -1,16 +1,205 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { insertRegistrationSchema, registrationFormSchema, insertStudySessionSchema } from "@shared/schema";
+import { 
+  insertRegistrationSchema, 
+  registrationFormSchema, 
+  insertStudySessionSchema,
+  userLoginSchema,
+  userRegisterSchema
+} from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { PostgresStorage } from "./pgStorage";
+import bcrypt from "bcryptjs";
 
 // Create a PostgreSQL storage instance
 export const storage = new PostgresStorage();
 
+// Auth middleware
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  // @ts-ignore - session is added by express-session
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  return res.status(401).json({ error: "Not authenticated" });
+};
+
+// Admin middleware
+const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  // @ts-ignore - session is added by express-session
+  const userId = req.session?.userId;
+  
+  if (!userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  
+  try {
+    const user = await storage.getUser(userId);
+    if (user && user.role === 'admin') {
+      return next();
+    }
+    return res.status(403).json({ error: "Not authorized" });
+  } catch (error) {
+    console.error('Admin check error:', error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // API routes for registrations
-  app.get("/api/registrations", async (req: Request, res: Response) => {
+  // Authentication routes
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { identifier, password } = userLoginSchema.parse(req.body);
+      
+      // Try to find user by username or email
+      let user = await storage.getUserByUsername(identifier);
+      
+      if (!user) {
+        // Try by email if not found by username
+        const users = await storage.getUsers();
+        user = users.find(u => u.email === identifier);
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Set session data
+      // @ts-ignore - session is added by express-session
+      req.session.userId = user.id;
+      // @ts-ignore - session is added by express-session
+      req.session.userRole = user.role;
+      
+      return res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isAnonymous: user.isAnonymous,
+        preferredContact: user.preferredContact
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Login error:", error);
+      return res.status(500).json({ message: "Error during login" });
+    }
+  });
+  
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      const data = userRegisterSchema.parse(req.body);
+      
+      // Check if username or email already exists
+      if (data.username) {
+        const existingUser = await storage.getUserByUsername(data.username);
+        if (existingUser) {
+          return res.status(400).json({ message: "Username already taken" });
+        }
+      }
+      
+      if (data.email) {
+        const users = await storage.getUsers();
+        const emailExists = users.some(u => u.email === data.email);
+        if (emailExists) {
+          return res.status(400).json({ message: "Email already registered" });
+        }
+      }
+      
+      // Hash password
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      
+      // Create user
+      const user = await storage.createUser({
+        username: data.username,
+        email: data.email,
+        passwordHash,
+        role: 'user',
+        isAnonymous: data.isAnonymous,
+        preferredContact: data.preferredContact,
+        registrationId: data.registrationId
+      });
+      
+      // Set session data
+      // @ts-ignore - session is added by express-session
+      req.session.userId = user.id;
+      // @ts-ignore - session is added by express-session  
+      req.session.userRole = user.role;
+      
+      return res.status(201).json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isAnonymous: user.isAnonymous,
+        preferredContact: user.preferredContact
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Registration error:", error);
+      return res.status(500).json({ message: "Error during registration" });
+    }
+  });
+  
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    // @ts-ignore - session is added by express-session
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Error during logout" });
+      }
+      
+      return res.status(200).json({ message: "Logged out successfully" });
+    });
+  });
+  
+  app.get("/api/auth/me", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        // @ts-ignore - session is added by express-session
+        req.session.destroy(() => {});
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      return res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isAnonymous: user.isAnonymous,
+        preferredContact: user.preferredContact
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return res.status(500).json({ message: "Error fetching user profile" });
+    }
+  });
+  // API routes for registrations (admin only)
+  app.get("/api/registrations", isAdmin, async (req: Request, res: Response) => {
     try {
       const registrations = await storage.getRegistrations();
       return res.json(registrations);
