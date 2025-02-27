@@ -11,3 +11,57 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer components {
+  .app-layout {
+    @apply flex flex-col min-h-screen;
+  }
+
+  .app-header {
+    @apply bg-primary text-white p-4 shadow-md flex justify-between items-center;
+  }
+
+  .logo a {
+    @apply text-xl font-bold text-white hover:text-gray-100;
+  }
+
+  .main-nav ul {
+    @apply flex gap-4;
+  }
+
+  .main-nav li a {
+    @apply text-white hover:text-gray-100;
+  }
+
+  .app-content {
+    @apply flex-grow p-4 sm:p-6 max-w-5xl mx-auto w-full;
+  }
+
+  .app-footer {
+    @apply bg-gray-100 p-4 text-center text-gray-600 text-sm;
+  }
+
+  .page-container {
+    @apply space-y-6 py-8;
+  }
+
+  .auth-actions {
+    @apply flex flex-col sm:flex-row gap-3 mt-4;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium text-center block;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+  }
+
+  .btn-accent {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700;
+  }
+}
