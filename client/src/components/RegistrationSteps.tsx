@@ -171,6 +171,16 @@ export function RegistrationSteps() {
   
   const onSubmit = async (values: FormValues) => {
     try {
+      // Validate group type selection
+      if (!values.groupType) {
+        toast({
+          title: "Please select a group type",
+          description: "Please select either Men's Groups or Women's Groups.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Make sure required fields are set based on the selected option
       if (showCustomTimes) {
         // For custom times, make sure days and times are selected
@@ -235,6 +245,7 @@ export function RegistrationSteps() {
             onAccountCreated={handleAccountCreated}
             onSkip={handleSkipAccountCreation}
             email={form.getValues().email || null}
+            name={form.getValues().name || null}
             registrationId={registrationData.id}
           />
         </div>
@@ -431,40 +442,11 @@ export function RegistrationSteps() {
                 <p className="mb-6 text-[#374151]">Help us place you in a step study group that works best for you.</p>
                 
                 <div className="space-y-6">
-                  <FormField
-                    control={form.control}
+                  {/* Hidden field to maintain the groupType value */}
+                  <input 
+                    type="hidden" 
                     name="groupType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-[#374151]">Preferred Group Type</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedGroupType(value); // Update state to trigger the query
-                            // Reset showCustomTimes when group type changes
-                            setShowCustomTimes(false);
-                            // Reset sessionId when changing group type
-                            form.setValue("sessionId", undefined);
-                            // Reset flexibilityOption 
-                            form.setValue("flexibilityOption", "preferred_session");
-                          }}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="min-h-[44px] w-full pl-3 pr-10 py-2 text-base border-[#9CA3AF] focus:outline-none focus:ring-primary focus:border-primary rounded-md">
-                              <SelectValue placeholder="Select a group type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="men">Men's Group</SelectItem>
-                            <SelectItem value="women">Women's Group</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {form.formState.errors.groupType && (
-                          <p className="text-xs text-red-500 mt-1">{form.formState.errors.groupType.message}</p>
-                        )}
-                      </FormItem>
-                    )}
+                    value={selectedGroupType} 
                   />
                   
                   {/* Hidden field to maintain the flexibilityOption value */}
@@ -485,7 +467,10 @@ export function RegistrationSteps() {
                             type="button"
                             variant={selectedGroupType === "" ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setSelectedGroupType("")}
+                            onClick={() => {
+                              setSelectedGroupType("");
+                              form.setValue("groupType", "");
+                            }}
                             className="h-9 w-full text-xs sm:text-sm"
                           >
                             All Sessions
@@ -494,7 +479,10 @@ export function RegistrationSteps() {
                             type="button"
                             variant={selectedGroupType === "men" ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setSelectedGroupType("men")}
+                            onClick={() => {
+                              setSelectedGroupType("men");
+                              form.setValue("groupType", "men");
+                            }}
                             className="h-9 w-full text-xs sm:text-sm"
                           >
                             Men's Groups
@@ -503,12 +491,18 @@ export function RegistrationSteps() {
                             type="button"
                             variant={selectedGroupType === "women" ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setSelectedGroupType("women")}
+                            onClick={() => {
+                              setSelectedGroupType("women");
+                              form.setValue("groupType", "women");
+                            }}
                             className="h-9 w-full text-xs sm:text-sm"
                           >
                             Women's Groups
                           </Button>
                         </div>
+                        {form.formState.errors.groupType && (
+                          <p className="text-xs text-red-500 mt-1">{form.formState.errors.groupType.message}</p>
+                        )}
                       </div>
                       
                       {allStudySessions.isLoading && (
@@ -554,6 +548,9 @@ export function RegistrationSteps() {
                                       field.onChange(session.id);
                                       setShowCustomTimes(false);
                                       form.setValue("flexibilityOption", "preferred_session");
+                                      // Ensure the group type is set to match the selected session
+                                      setSelectedGroupType(session.groupType);
+                                      form.setValue("groupType", session.groupType);
                                     }}
                                   >
                                     <div className="flex justify-between items-start mb-2">

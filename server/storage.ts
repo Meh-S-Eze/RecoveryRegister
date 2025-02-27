@@ -7,7 +7,11 @@ import {
   type InsertRegistration,
   studySessions,
   type StudySession,
-  type InsertStudySession
+  type InsertStudySession,
+  userProfiles,
+  type UserProfile,
+  type InsertUserProfile,
+  type UpdateUserProfile
 } from "@shared/schema";
 
 // modify the interface with any CRUD methods
@@ -18,6 +22,13 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserEmail(userId: number, email: string): Promise<User | undefined>;
+  updateUserPassword(userId: number, passwordHash: string): Promise<boolean>;
+  
+  // User profile methods
+  getUserProfile(userId: number): Promise<UserProfile | undefined>;
+  createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
+  updateUserProfile(userId: number, profile: UpdateUserProfile): Promise<UserProfile | undefined>;
   
   // Registration methods
   getRegistrations(): Promise<Registration[]>;
@@ -38,6 +49,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private registrations: Map<number, Registration>;
   private studySessions: Map<number, StudySession>;
+  private userProfiles: Map<number, UserProfile>;
   private userCurrentId: number;
   private registrationCurrentId: number;
   private studySessionCurrentId: number;
@@ -46,6 +58,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.registrations = new Map();
     this.studySessions = new Map();
+    this.userProfiles = new Map();
     this.userCurrentId = 1;
     this.registrationCurrentId = 1;
     this.studySessionCurrentId = 1;
@@ -87,6 +100,93 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
+  
+  async updateUserEmail(userId: number, email: string): Promise<User | undefined> {
+    const user = this.users.get(userId);
+    
+    if (!user) {
+      return undefined;
+    }
+    
+    const updatedUser: User = {
+      ...user,
+      email,
+      preferredContact: 'email'
+    };
+    
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserPassword(userId: number, passwordHash: string): Promise<boolean> {
+    const user = this.users.get(userId);
+    
+    if (!user) {
+      return false;
+    }
+    
+    const updatedUser: User = {
+      ...user,
+      passwordHash
+    };
+    
+    this.users.set(userId, updatedUser);
+    return true;
+  }
+  
+  // User profile methods
+  async getUserProfile(userId: number): Promise<UserProfile | undefined> {
+    return this.userProfiles.get(userId);
+  }
+  
+  async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
+    const now = new Date();
+    
+    const userProfile: UserProfile = {
+      userId: profile.userId,
+      displayName: profile.displayName ?? null,
+      biography: profile.biography ?? null,
+      location: profile.location ?? null,
+      preferences: profile.preferences ?? [],
+      updatedAt: now
+    };
+    
+    this.userProfiles.set(profile.userId, userProfile);
+    return userProfile;
+  }
+  
+  async updateUserProfile(userId: number, profile: UpdateUserProfile): Promise<UserProfile | undefined> {
+    const existing = this.userProfiles.get(userId);
+    const now = new Date();
+    
+    if (existing) {
+      // Update existing profile
+      const updatedProfile: UserProfile = {
+        ...existing,
+        displayName: profile.displayName ?? existing.displayName,
+        biography: profile.biography ?? existing.biography,
+        location: profile.location ?? existing.location,
+        preferences: profile.preferences ?? existing.preferences,
+        updatedAt: now
+      };
+      
+      this.userProfiles.set(userId, updatedProfile);
+      return updatedProfile;
+    } else {
+      // Create new profile
+      const newProfile: UserProfile = {
+        userId,
+        displayName: profile.displayName ?? null,
+        biography: profile.biography ?? null,
+        location: profile.location ?? null,
+        preferences: profile.preferences ?? [],
+        updatedAt: now
+      };
+      
+      this.userProfiles.set(userId, newProfile);
+      return newProfile;
+    }
+  }
 
   async getRegistrations(): Promise<Registration[]> {
     return Array.from(this.registrations.values());
@@ -100,25 +200,53 @@ export class MemStorage implements IStorage {
     const id = this.registrationCurrentId++;
     const now = new Date();
     
+    // Ensure we have valid data for all fields
+    const safeInsertRegistration = {
+      ...insertRegistration,
+      // Ensure name is a string
+      name: typeof insertRegistration.name === 'string' ? insertRegistration.name : '',
+      // Handle all potential invalid email values
+      email: (insertRegistration.email && 
+              typeof insertRegistration.email === 'string' &&
+              insertRegistration.email !== "" && 
+              insertRegistration.email !== "null" && 
+              insertRegistration.email !== "undefined") ? insertRegistration.email : null,
+      // Ensure other fields have valid values or defaults            
+      phone: insertRegistration.phone ?? null,
+      contactMethod: insertRegistration.contactMethod ?? null,
+      contactConsent: Boolean(insertRegistration.contactConsent),
+      groupType: insertRegistration.groupType ?? null,
+      sessionId: typeof insertRegistration.sessionId === 'number' ? insertRegistration.sessionId : null,
+      availableDays: Array.isArray(insertRegistration.availableDays) ? insertRegistration.availableDays : [],
+      availableTimes: Array.isArray(insertRegistration.availableTimes) ? insertRegistration.availableTimes : [],
+      flexibilityOption: insertRegistration.flexibilityOption ?? null,
+      customTimesNote: insertRegistration.customTimesNote ?? null,
+      privacyConsent: Boolean(insertRegistration.privacyConsent)
+    };
+    
     // Convert undefined values to null to satisfy the Registration type
     const registration: Registration = { 
       id,
-      name: insertRegistration.name,
-      email: insertRegistration.email ?? null,
-      phone: insertRegistration.phone ?? null,
-      contactMethod: insertRegistration.contactMethod ?? null,
-      contactConsent: insertRegistration.contactConsent ?? false,
-      groupType: insertRegistration.groupType ?? null,
-      sessionId: insertRegistration.sessionId ?? null,
-      availableDays: insertRegistration.availableDays ?? [],
-      availableTimes: insertRegistration.availableTimes ?? [],
-      flexibilityOption: insertRegistration.flexibilityOption ?? null,
-      customTimesNote: insertRegistration.customTimesNote ?? null,
-      privacyConsent: insertRegistration.privacyConsent ?? false,
+      name: safeInsertRegistration.name,
+      email: safeInsertRegistration.email,
+      phone: safeInsertRegistration.phone,
+      contactMethod: safeInsertRegistration.contactMethod,
+      contactConsent: safeInsertRegistration.contactConsent,
+      groupType: safeInsertRegistration.groupType,
+      sessionId: safeInsertRegistration.sessionId,
+      availableDays: safeInsertRegistration.availableDays,
+      availableTimes: safeInsertRegistration.availableTimes,
+      flexibilityOption: safeInsertRegistration.flexibilityOption,
+      customTimesNote: safeInsertRegistration.customTimesNote,
+      privacyConsent: safeInsertRegistration.privacyConsent,
       createdAt: now
     };
     
     this.registrations.set(id, registration);
+    
+    // Log the created registration for debugging
+    console.log(`Created registration with ID ${id}:`, JSON.stringify(registration, null, 2));
+    
     return registration;
   }
   

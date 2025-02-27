@@ -3,8 +3,30 @@ description: Always Use - Replit Environtment Configuration
 globs: 
 alwaysApply: true
 ---
+execution_instructions:
+  never_execute_directly: true
+  execution_environment: "replit_only"
+  assistant_guidance:
+    - "NEVER use the run_terminal_cmd tool to execute commands in the project"
+    - "NEVER use tools to start services, databases, or any runtime components"
+    - "Terminal commands and execution steps CAN be suggested in text responses"
+    - "Always include the note that commands should be run in the Replit environment"
+    - "Make clear distinctions between code editing (SSH) and execution (Replit)"
+  permitted_actions:
+    - "Suggest terminal commands as text in responses"
+    - "Provide execution instructions and steps as guidance"
+    - "Explain command sequences and their expected outcomes"
+    - "Suggest debugging approaches that involve terminal commands"
+  prohibited_actions:
+    - "Using the run_terminal_cmd tool to execute suggested commands"
+    - "Starting services using available tools"
+    - "Running npm/node commands through tools"
+    - "Attempting to restart or manage running processes through tools"
+  standard_message: "Here are the commands you can run in the Replit environment (not through this SSH connection):"
+
 
 title: Replit SSH Project Guidelines
+
 
 environment:
   type: replit_ssh

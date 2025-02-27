@@ -33,15 +33,18 @@ export const userRegisterSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   isAnonymous: z.boolean().optional().default(false),
   preferredContact: z.enum(["username", "email", "none"]).optional().default("username"),
-  registrationId: z.number().optional(),
+  registrationId: z.number().int("Registration ID must be an integer").positive("Registration ID must be positive").optional(),
 }).refine(data => {
   // If anonymous, no username required
   if (data.isAnonymous) return true;
   
+  // If registrationId is provided, we can use that to get the name
+  if (data.registrationId) return true;
+  
   // Otherwise, either username or email is required
   return !!data.username || !!data.email;
 }, {
-  message: "Either username or email must be provided for non-anonymous accounts",
+  message: "Either username, email, or registration ID must be provided for non-anonymous accounts",
   path: ["username"]
 });
 
@@ -77,6 +80,42 @@ export const insertStudySessionSchema = createInsertSchema(studySessions).omit({
 export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
 export type StudySession = typeof studySessions.$inferSelect;
 
+// User profiles table for managing basic demographic information
+export const userProfiles = pgTable("user_profiles", {
+  userId: integer("user_id").primaryKey().references(() => users.id),
+  displayName: text("display_name"),
+  biography: text("biography"),
+  location: text("location"),
+  preferences: text("preferences").array(), // Store serialized preferences
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
+  updatedAt: true,
+});
+
+export const updateUserProfileSchema = z.object({
+  displayName: z.string().min(2, "Display name must be at least 2 characters").optional(),
+  biography: z.string().max(500, "Biography must be less than 500 characters").optional(),
+  location: z.string().max(100, "Location must be less than 100 characters").optional(),
+  preferences: z.array(z.string()).optional(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+export type UpdateUserProfile = z.infer<typeof updateUserProfileSchema>;
+
+// Credentials update schemas
+export const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters"),
+});
+
+export const updateEmailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required to update email"),
+});
+
 // Registrations table for Celebrate Recovery step study
 export const registrations = pgTable("registrations", {
   id: serial("id").primaryKey(),
@@ -111,6 +150,24 @@ export const registrationFormSchema = insertRegistrationSchema.extend({
     message: "You must acknowledge the privacy notice to continue."
   }),
   groupType: z.string().min(1, "Please select a group type"),
+  // Make email field super flexible - accept anything but transform invalid values to undefined
+  email: z.preprocess(
+    (val) => {
+      // If it's empty, null, undefined, or not a string, return undefined
+      if (!val || val === "" || val === "null" || val === "undefined" || typeof val !== "string") {
+        return undefined;
+      }
+      
+      // If it looks like a valid email, keep it
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        return val;
+      }
+      
+      // Otherwise return undefined
+      return undefined;
+    },
+    z.string().email("Please enter a valid email address").optional()
+  ),
   // Make flexibility option required
   flexibilityOption: z.string().min(1, "Please select a scheduling preference"),
   // Make days and times conditionally required based on flexibilityOption

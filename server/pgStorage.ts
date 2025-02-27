@@ -4,7 +4,8 @@ import { IStorage } from './storage';
 import { 
   User, InsertUser, 
   Registration, InsertRegistration,
-  StudySession, InsertStudySession 
+  StudySession, InsertStudySession,
+  UserProfile, InsertUserProfile, UpdateUserProfile
 } from '@shared/schema';
 
 export class PostgresStorage implements IStorage {
@@ -27,6 +28,57 @@ export class PostgresStorage implements IStorage {
     const result = await db.insert(tables.users).values(user).returning();
     return result[0];
   }
+  
+  async updateUserEmail(userId: number, email: string): Promise<User | undefined> {
+    const result = await db.update(tables.users)
+      .set({ email, preferredContact: 'email' })
+      .where(eq(tables.users.id, userId))
+      .returning();
+    return result[0];
+  }
+  
+  async updateUserPassword(userId: number, passwordHash: string): Promise<boolean> {
+    const result = await db.update(tables.users)
+      .set({ passwordHash })
+      .where(eq(tables.users.id, userId))
+      .returning();
+    return result.length > 0;
+  }
+  
+  // User profile methods
+  async getUserProfile(userId: number): Promise<UserProfile | undefined> {
+    const profiles = await db.select().from(tables.userProfiles).where(eq(tables.userProfiles.userId, userId));
+    return profiles[0];
+  }
+  
+  async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
+    const result = await db.insert(tables.userProfiles).values(profile).returning();
+    return result[0];
+  }
+  
+  async updateUserProfile(userId: number, profile: UpdateUserProfile): Promise<UserProfile | undefined> {
+    // Check if profile exists
+    const existing = await this.getUserProfile(userId);
+    
+    if (existing) {
+      // Update existing profile
+      const result = await db.update(tables.userProfiles)
+        .set({ ...profile, updatedAt: new Date() })
+        .where(eq(tables.userProfiles.userId, userId))
+        .returning();
+      return result[0];
+    } else {
+      // Create new profile if it doesn't exist
+      const result = await db.insert(tables.userProfiles).values({
+        userId,
+        displayName: profile.displayName,
+        biography: profile.biography,
+        location: profile.location,
+        preferences: profile.preferences
+      }).returning();
+      return result[0];
+    }
+  }
 
   // Registration methods
   async getRegistrations(): Promise<Registration[]> {
@@ -39,8 +91,43 @@ export class PostgresStorage implements IStorage {
   }
 
   async createRegistration(registration: InsertRegistration): Promise<Registration> {
-    const result = await db.insert(tables.registrations).values(registration).returning();
-    return result[0];
+    try {
+      // Ensure we have valid data for all fields
+      const safeRegistration = {
+        ...registration,
+        // Ensure name is a string
+        name: typeof registration.name === 'string' ? registration.name : '',
+        // Handle all potential invalid email values
+        email: (registration.email && 
+                typeof registration.email === 'string' &&
+                registration.email !== "" && 
+                registration.email !== "null" && 
+                registration.email !== "undefined") ? registration.email : null,
+        // Ensure other fields have valid values or defaults            
+        phone: registration.phone ?? null,
+        contactMethod: registration.contactMethod ?? null,
+        contactConsent: Boolean(registration.contactConsent),
+        groupType: registration.groupType ?? null,
+        sessionId: typeof registration.sessionId === 'number' ? registration.sessionId : null,
+        availableDays: Array.isArray(registration.availableDays) ? registration.availableDays : [],
+        availableTimes: Array.isArray(registration.availableTimes) ? registration.availableTimes : [],
+        flexibilityOption: registration.flexibilityOption ?? null,
+        customTimesNote: registration.customTimesNote ?? null,
+        privacyConsent: Boolean(registration.privacyConsent)
+      };
+      
+      // Log the sanitized registration data
+      console.log("PostgresStorage: Creating registration with sanitized data:", JSON.stringify(safeRegistration, null, 2));
+      
+      const result = await db.insert(tables.registrations).values(safeRegistration).returning();
+      
+      console.log("PostgresStorage: Created registration:", JSON.stringify(result[0], null, 2));
+      
+      return result[0];
+    } catch (error) {
+      console.error("PostgresStorage: Error creating registration:", error);
+      throw error;
+    }
   }
 
   // Study Session methods

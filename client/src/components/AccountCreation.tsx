@@ -16,25 +16,22 @@ const accountSchema = z.object({
   createAccount: z.boolean().default(false),
   username: z.string().min(3, "Username must be at least 3 characters").optional(),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
-  isAnonymous: z.boolean().default(false),
   preferredContact: z.enum(["username", "email", "none"]).default("username"),
 });
 
 // Refine schema based on createAccount value
 const conditionalAccountSchema = accountSchema.refine(
   (data) => {
-    // If creating an account, username and password are required unless anonymous
+    // If creating an account, username and password are required
     if (data.createAccount) {
-      if (data.isAnonymous) {
-        return true; // Anonymous users don't need username
-      } else if (!data.username || !data.password) {
-        return false; // Non-anonymous users need username and password
+      if (!data.username || !data.password) {
+        return false; // Users need username and password
       }
     }
     return true;
   },
   {
-    message: "Username and password are required unless you choose to remain anonymous",
+    message: "Username and password are required",
     path: ["username"],
   }
 );
@@ -45,10 +42,11 @@ interface AccountCreationProps {
   onAccountCreated: (userData: any) => void;
   onSkip: () => void;
   email?: string | null;
+  name?: string | null;
   registrationId: number;
 }
 
-export function AccountCreation({ onAccountCreated, onSkip, email, registrationId }: AccountCreationProps) {
+export function AccountCreation({ onAccountCreated, onSkip, email, name, registrationId }: AccountCreationProps) {
   const { toast } = useToast();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
@@ -56,17 +54,17 @@ export function AccountCreation({ onAccountCreated, onSkip, email, registrationI
     resolver: zodResolver(conditionalAccountSchema),
     defaultValues: {
       createAccount: false,
-      username: "",
+      username: name || "",
       password: "",
-      isAnonymous: false,
       preferredContact: email ? "email" : "username",
     },
     mode: "onChange",
   });
   
-  // Watch for changes to createAccount and isAnonymous
+  // Watch for changes to createAccount
   const createAccount = form.watch("createAccount");
-  const isAnonymous = form.watch("isAnonymous");
+  
+  // No longer watching isAnonymous as we're removing that option
 
   const registerUser = useMutation({
     mutationFn: (values: AccountValues) => {
@@ -76,10 +74,9 @@ export function AccountCreation({ onAccountCreated, onSkip, email, registrationI
       }
 
       const registerData = {
-        username: values.isAnonymous ? null : values.username,
+        username: values.username,
         email: email,
         password: values.password,
-        isAnonymous: values.isAnonymous,
         preferredContact: values.preferredContact,
         registrationId: registrationId
       };
@@ -159,50 +156,24 @@ export function AccountCreation({ onAccountCreated, onSkip, email, registrationI
             <div className="rounded-md border p-4 space-y-4">
               <FormField
                 control={form.control}
-                name="isAnonymous"
+                name="username"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-2 bg-amber-50 rounded-md">
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Username</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        className="mt-1 h-5 w-5"
+                      <Input 
+                        placeholder="Choose a username" 
+                        className="min-h-[44px]"
+                        {...field} 
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-sm font-medium cursor-pointer">
-                        I prefer to remain anonymous
-                      </FormLabel>
-                      <FormDescription className="text-xs text-amber-700">
-                        No username required, login with your private credentials
-                      </FormDescription>
-                    </div>
+                    <FormDescription className="text-xs">
+                      This will be your public identifier in the system
+                    </FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {!isAnonymous && (
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Username</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Choose a username" 
-                          className="min-h-[44px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs">
-                        This will be your public identifier in the system
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
 
               <FormField
                 control={form.control}
@@ -244,19 +215,19 @@ export function AccountCreation({ onAccountCreated, onSkip, email, registrationI
                         />
                         <label htmlFor="contact-none" className="text-sm">No contact (check website for updates)</label>
                       </div>
-                      {!isAnonymous && (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="contact-username"
-                            value="username"
-                            checked={field.value === "username"}
-                            onChange={() => field.onChange("username")}
-                            className="h-4 w-4 text-primary"
-                          />
-                          <label htmlFor="contact-username" className="text-sm">Contact via username (on website)</label>
-                        </div>
-                      )}
+                      
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="contact-username"
+                          value="username"
+                          checked={field.value === "username"}
+                          onChange={() => field.onChange("username")}
+                          className="h-4 w-4 text-primary"
+                        />
+                        <label htmlFor="contact-username" className="text-sm">Contact via username (on website)</label>
+                      </div>
+                      
                       {email && (
                         <div className="flex items-center space-x-2">
                           <input

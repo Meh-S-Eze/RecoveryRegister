@@ -5,7 +5,10 @@ import {
   registrationFormSchema, 
   insertStudySessionSchema,
   userLoginSchema,
-  userRegisterSchema
+  userRegisterSchema,
+  updateUserProfileSchema,
+  updatePasswordSchema,
+  updateEmailSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -101,7 +104,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
+      console.log("Registration request data:", JSON.stringify(req.body, null, 2));
+      
       const data = userRegisterSchema.parse(req.body);
+      
+      // Get registration data if registrationId is provided
+      let registrationData = null;
+      if (data.registrationId) {
+        try {
+          registrationData = await storage.getRegistration(data.registrationId);
+          console.log("Found registration data:", JSON.stringify(registrationData, null, 2));
+        } catch (regErr) {
+          console.error("Error fetching registration data:", regErr);
+        }
+      }
       
       // Special handling for anonymous users
       if (data.isAnonymous) {
@@ -131,10 +147,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const passwordHash = await bcrypt.hash(data.password, 10);
       
+      // Add registration name to username if username is not provided
+      let finalUsername = data.username;
+      if (!finalUsername && registrationData && registrationData.name) {
+        // Convert registration name to username format (lowercase, no spaces)
+        finalUsername = registrationData.name.toLowerCase().replace(/\s+/g, '_');
+        console.log(`Generated username '${finalUsername}' from registration name '${registrationData.name}'`);
+      }
+      
       // Create user
       const user = await storage.createUser({
-        username: data.username,
-        email: data.email,
+        username: finalUsername,
+        email: data.email || (registrationData ? registrationData.email : undefined),
         passwordHash,
         role: 'user',
         isAnonymous: data.isAnonymous,
@@ -239,23 +263,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/registrations", async (req: Request, res: Response) => {
     try {
-      // Validate the request body against the schema
-      const data = registrationFormSchema.parse(req.body);
+      // Log the raw request for debugging
+      console.log("Raw registration request body:", req.body);
       
-      // Create the registration in storage
-      const registration = await storage.createRegistration(data);
+      // Deep clone and sanitize the request body to handle all edge cases
+      const requestBody = JSON.parse(JSON.stringify(req.body));
       
-      return res.status(201).json(registration);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        // Convert Zod error to a more readable format
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: "Validation error", 
-          errors: validationError.details 
-        });
+      // Ensure all required fields exist with defaults if missing
+      requestBody.name = requestBody.name || "";
+      requestBody.groupType = requestBody.groupType || "";
+      requestBody.flexibilityOption = requestBody.flexibilityOption || "";
+      requestBody.privacyConsent = Boolean(requestBody.privacyConsent);
+      requestBody.contactConsent = Boolean(requestBody.contactConsent);
+      
+      // Handle all potential invalid email values
+      if (!requestBody.email || 
+          requestBody.email === "" || 
+          requestBody.email === "null" || 
+          requestBody.email === "undefined" ||
+          typeof requestBody.email !== "string") {
+        requestBody.email = undefined;
       }
       
+      // Ensure arrays are properly formatted
+      requestBody.availableDays = Array.isArray(requestBody.availableDays) ? requestBody.availableDays : [];
+      requestBody.availableTimes = Array.isArray(requestBody.availableTimes) ? requestBody.availableTimes : [];
+      requestBody.preferences = Array.isArray(requestBody.preferences) ? requestBody.preferences : [];
+      
+      // Log the sanitized request body for debugging
+      console.log("Sanitized registration request body:", JSON.stringify(requestBody, null, 2));
+      
+      try {
+        // Validate the request body against the schema
+        const data = registrationFormSchema.parse(requestBody);
+        
+        // Log the parsed data for debugging
+        console.log("Parsed registration data:", JSON.stringify(data, null, 2));
+        
+        // Create the registration in storage
+        const registration = await storage.createRegistration(data);
+        
+        return res.status(201).json(registration);
+      } catch (validationError) {
+        // Handle validation errors
+        if (validationError instanceof ZodError) {
+          // Print detailed validation error information
+          console.error("Validation error details:", JSON.stringify(validationError.format(), null, 2));
+          console.error("Validation error path:", validationError.errors.map(e => e.path.join('.')));
+          
+          const formattedError = fromZodError(validationError);
+          return res.status(400).json({ 
+            message: "Validation error", 
+            errors: formattedError.details 
+          });
+        }
+        throw validationError; // Re-throw if not a ZodError
+      }
+    } catch (error) {
       console.error("Error creating registration:", error);
       return res.status(500).json({ message: "Error creating registration" });
     }
@@ -374,6 +438,244 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting study session:", error);
       return res.status(500).json({ message: "Error deleting study session" });
+    }
+  });
+
+  // User profile routes (authenticated only)
+  app.get("/api/user/profile", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Get user and profile
+      const user = await storage.getUser(userId);
+      const profile = await storage.getUserProfile(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return basic user info along with profile
+      return res.json({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isAnonymous: user.isAnonymous,
+          preferredContact: user.preferredContact
+        },
+        profile: profile || null
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return res.status(500).json({ message: "Error fetching user profile" });
+    }
+  });
+  
+  app.post("/api/user/profile", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Validate profile data
+      const profileData = updateUserProfileSchema.parse(req.body);
+      
+      // Update or create profile
+      const updatedProfile = await storage.updateUserProfile(userId, profileData);
+      
+      return res.json(updatedProfile);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Error updating user profile:", error);
+      return res.status(500).json({ message: "Error updating user profile" });
+    }
+  });
+  
+  // Credential update routes (authenticated only)
+  app.post("/api/user/password", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Validate password data
+      const { currentPassword, newPassword } = updatePasswordSchema.parse(req.body);
+      
+      // Get user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify current password
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash and update new password
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      const updated = await storage.updateUserPassword(userId, passwordHash);
+      
+      if (!updated) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      return res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Error updating password:", error);
+      return res.status(500).json({ message: "Error updating password" });
+    }
+  });
+  
+  app.post("/api/user/email", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Validate email data
+      const { email, password } = updateEmailSchema.parse(req.body);
+      
+      // Get user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Password is incorrect" });
+      }
+      
+      // Check if email is already in use by another user
+      const users = await storage.getUsers();
+      const emailExists = users.some((u) => u.email === email && u.id !== userId);
+      
+      if (emailExists) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+      
+      // Update email
+      const updatedUser = await storage.updateUserEmail(userId, email);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update email" });
+      }
+      
+      return res.json({
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        isAnonymous: updatedUser.isAnonymous,
+        preferredContact: updatedUser.preferredContact
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Error updating email:", error);
+      return res.status(500).json({ message: "Error updating email" });
+    }
+  });
+
+  // Add a new endpoint to fetch registration by ID for the registration flow
+  app.get("/api/public/registration/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      console.log(`Fetching registration data for ID: ${id}`);
+      const registration = await storage.getRegistration(id);
+      
+      if (!registration) {
+        console.log(`Registration not found for ID: ${id}`);
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      console.log(`Successfully retrieved registration for ID: ${id}`, JSON.stringify(registration, null, 2));
+      
+      // Return a more complete set of fields for the registration flow
+      return res.json({
+        id: registration.id,
+        name: registration.name,
+        email: registration.email,
+        phone: registration.phone,
+        contactMethod: registration.contactMethod,
+        groupType: registration.groupType,
+        sessionId: registration.sessionId,
+        availableDays: registration.availableDays,
+        availableTimes: registration.availableTimes,
+        flexibilityOption: registration.flexibilityOption,
+        // Don't include private data like privacy consent
+      });
+    } catch (error) {
+      console.error("Error fetching registration:", error);
+      return res.status(500).json({ message: "Error fetching registration" });
+    }
+  });
+
+  // Add a helper endpoint to prepare registration data for account creation
+  app.get("/api/public/prepare-account/:registrationId", async (req: Request, res: Response) => {
+    try {
+      const registrationId = parseInt(req.params.registrationId);
+      if (isNaN(registrationId)) {
+        return res.status(400).json({ message: "Invalid registration ID format" });
+      }
+
+      console.log(`Preparing account creation data for registration ID: ${registrationId}`);
+      const registration = await storage.getRegistration(registrationId);
+      
+      if (!registration) {
+        console.log(`Registration not found for ID: ${registrationId}`);
+        return res.status(404).json({ message: "Registration not found" });
+      }
+
+      // Generate a suggested username from the registration name
+      let suggestedUsername = "";
+      if (registration.name) {
+        // Convert registration name to username format (lowercase, no spaces)
+        suggestedUsername = registration.name.toLowerCase().replace(/\s+/g, '_');
+      }
+      
+      // Return data prepared for account creation
+      return res.json({
+        registrationId: registration.id,
+        suggestedUsername,
+        email: registration.email,
+        name: registration.name,
+        // Include any other fields that might be useful for account creation
+      });
+    } catch (error) {
+      console.error("Error preparing account creation data:", error);
+      return res.status(500).json({ message: "Error preparing account creation data" });
     }
   });
 

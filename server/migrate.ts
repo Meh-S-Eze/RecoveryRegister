@@ -26,6 +26,16 @@ export async function createTables() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )`,
       
+      // User profiles table for basic demographic information
+      `CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id),
+        display_name TEXT,
+        biography TEXT,
+        location TEXT,
+        preferences TEXT[],
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )`,
+      
       // Registrations table
       `CREATE TABLE IF NOT EXISTS registrations (
         id SERIAL PRIMARY KEY,
