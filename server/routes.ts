@@ -1,9 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
 import { insertRegistrationSchema, registrationFormSchema, insertStudySessionSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { PostgresStorage } from "./pgStorage";
+
+// Create a PostgreSQL storage instance
+export const storage = new PostgresStorage();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes for registrations
