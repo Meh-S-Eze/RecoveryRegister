@@ -9,12 +9,12 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-// Dialog component no longer needed
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { FormProgress } from "@/components/FormProgress";
 import { ConfirmationMessage } from "@/components/ConfirmationMessage";
+import { AccountCreation } from "@/components/AccountCreation";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
