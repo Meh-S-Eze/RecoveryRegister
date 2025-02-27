@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db, tables } from './db';
 import { IStorage } from './storage';
 import { 
@@ -56,8 +56,10 @@ export class PostgresStorage implements IStorage {
   async getActiveStudySessionsByGroupType(groupType: string): Promise<StudySession[]> {
     return await db.select()
       .from(tables.studySessions)
-      .where(eq(tables.studySessions.isActive, true))
-      .where(eq(tables.studySessions.groupType, groupType));
+      .where(and(
+        eq(tables.studySessions.isActive, true),
+        eq(tables.studySessions.groupType, groupType)
+      ));
   }
 
   async createStudySession(session: InsertStudySession): Promise<StudySession> {

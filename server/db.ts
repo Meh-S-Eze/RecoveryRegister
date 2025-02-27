@@ -1,14 +1,12 @@
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import { users, registrations, studySessions } from '@shared/schema';
 
 // Initialize the database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+const queryClient = postgres(process.env.DATABASE_URL!);
 
 // Create a drizzle client
-export const db = drizzle(pool);
+export const db = drizzle(queryClient);
 
 // Export tables for convenience
 export const tables = {
