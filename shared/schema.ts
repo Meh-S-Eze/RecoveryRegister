@@ -30,17 +30,19 @@ export const userLoginSchema = z.object({
 export const userRegisterSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").optional(),
   email: z.string().email("Invalid email address").optional(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(1, "Please confirm your password"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   isAnonymous: z.boolean().optional().default(false),
-  preferredContact: z.enum(["username", "email"]).optional().default("username"),
+  preferredContact: z.enum(["username", "email", "none"]).optional().default("username"),
   registrationId: z.number().optional(),
-}).refine(data => data.username || data.email, {
-  message: "Either username or email must be provided",
+}).refine(data => {
+  // If anonymous, no username required
+  if (data.isAnonymous) return true;
+  
+  // Otherwise, either username or email is required
+  return !!data.username || !!data.email;
+}, {
+  message: "Either username or email must be provided for non-anonymous accounts",
   path: ["username"]
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

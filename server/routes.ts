@@ -103,19 +103,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = userRegisterSchema.parse(req.body);
       
-      // Check if username or email already exists
-      if (data.username) {
-        const existingUser = await storage.getUserByUsername(data.username);
-        if (existingUser) {
-          return res.status(400).json({ message: "Username already taken" });
+      // Special handling for anonymous users
+      if (data.isAnonymous) {
+        // For anonymous users, we just need a password
+        if (!data.password) {
+          return res.status(400).json({ message: "Password is required even for anonymous accounts" });
         }
-      }
-      
-      if (data.email) {
-        const users = await storage.getUsers();
-        const emailExists = users.some((u) => u.email === data.email);
-        if (emailExists) {
-          return res.status(400).json({ message: "Email already registered" });
+      } else {
+        // For non-anonymous users, check if username exists
+        if (data.username) {
+          const existingUser = await storage.getUserByUsername(data.username);
+          if (existingUser) {
+            return res.status(400).json({ message: "Username already taken" });
+          }
+        }
+        
+        // Check if email exists (if provided)
+        if (data.email) {
+          const users = await storage.getUsers();
+          const emailExists = users.some((u) => u.email === data.email);
+          if (emailExists) {
+            return res.status(400).json({ message: "Email already registered" });
+          }
         }
       }
       
@@ -129,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordHash,
         role: 'user',
         isAnonymous: data.isAnonymous,
-        preferredContact: data.preferredContact,
+        preferredContact: data.preferredContact || (data.email ? 'email' : 'none'),
         registrationId: data.registrationId
       });
       
