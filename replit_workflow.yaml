@@ -1,0 +1,67 @@
+title: Replit vs Cursor SSH Workflow Guidelines
+
+replit_direct_operations:
+  execution:
+    - "Run the project directly in Replit, not within Cursor SSH"
+    - "Use Replit's Run button for starting the application"
+    - "Rely on Replit's console for viewing application logs and output"
+    - "Debug using Replit's built-in debugging tools when possible"
+  
+  replit_specific_features:
+    - "Use Replit Shell for installing packages and system dependencies"
+    - "Configure environment variables through Replit Secrets or .env"
+    - "Utilize Replit Database if your project requires it"
+    - "Access Replit Graphics features (incompatible with SSH X11 forwarding)"
+    - "Configure Replit deployment and hosting options"
+  
+  performance_considerations:
+    - "Perform resource-intensive operations (builds, tests) directly in Replit"
+    - "Monitor resource usage through Replit's interface"
+    - "Restart the Repl when experiencing performance issues"
+
+cursor_ssh_appropriate:
+  editing:
+    - "Use Cursor for code editing and navigation"
+    - "Take advantage of Cursor's AI assistance for code completion and documentation"
+    - "Perform static code analysis within Cursor"
+  
+  file_management:
+    - "Create, rename, and delete files (changes sync automatically)"
+    - "Organize project structure"
+    - "Edit configuration files (except Replit-specific ones)"
+
+common_issues:
+  connection_problems:
+    - "SSH key misconfiguration between Cursor and Replit"
+    - "Network timeouts when connecting"
+    - "Session expiration requiring reconnection"
+    - "Platform selection issues during connection setup"
+  
+  execution_errors:
+    - "Command not found errors when trying to run directly in SSH"
+    - "Port binding conflicts between local and Replit environments"
+    - "Filepath inconsistencies between local and remote environments"
+    - "Environment variable availability differences"
+  
+  syncing_limitations:
+    - "Large binary file synchronization issues"
+    - "Latency with extensive file changes"
+    - "Node modules and other large directories may cause sync problems"
+
+best_practices:
+  workflow:
+    - "Edit code in Cursor SSH, run in Replit's native interface"
+    - "Keep Replit tab open alongside Cursor for execution and monitoring"
+    - "Use git for version control rather than relying solely on Replit's history"
+    - "Regularly check connection status before making significant changes"
+  
+  performance:
+    - "Avoid running resource-intensive operations through SSH connection"
+    - "Close unused SSH connections to preserve Replit container resources"
+    - "Consider using .replignore for large directories that don't need syncing"
+  
+  troubleshooting:
+    - "If SSH connection fails, try reconnecting directly from Replit interface"
+    - "Check Replit's status page for ongoing service issues"
+    - "Clear browser cache if Replit web interface becomes unresponsive"
+    - "Restart Replit container if file synchronization appears broken" 

@@ -1,0 +1,102 @@
+
+description: "Privacy-focused, flexible authentication system compatible with Celebrate Recovery principles"
+
+globs: src/config/auth.js, src/models/User.js, src/utils/clientSanitize.js, src/routes/auth.js, src/middleware/session.js
+
+auth_strategy:
+  type: "flexible_identity"
+  features:
+    - "pseudonym_support"
+    - "email_optional"
+    - "basic_encryption"
+  security_profile: "basic_protection"
+  
+principles:
+  privacy:
+    - "no_forced_disclosure"
+    - "pseudonym_support" 
+    - "client_side_opacity"
+  security:
+    - "session_encryption"
+    - "data_sanitization"
+    - "security_profiles"
+  
+implementation:
+  files:
+    auth_config:
+      path: "src/config/auth.js"
+      purpose: "Central configuration for authentication options"
+      key_settings:
+        - "allowPseudonyms: true"
+        - "requireEmail: false"
+        - "minPseudonymLength: 2"
+        - "clientSideEncryption: enabled"
+    
+    user_model:
+      path: "src/models/User.js"
+      purpose: "User data structure with privacy controls"
+      fields:
+        - "identityType: ['pseudonym', 'email']"
+        - "recoveryHash: String (private)"
+        - "securityProfile: String"
+    
+    client_protection:
+      path: "src/utils/clientSanitize.js"
+      purpose: "Prevent sensitive data exposure to clients"
+      sensitive_keys:
+        - "email"
+        - "realName"
+        - "phone"
+    
+    auth_routes:
+      path: "src/routes/auth.js"
+      purpose: "Handle registration and login flows"
+      key_flows:
+        - "Register with pseudonym only"
+        - "Register with optional email"
+        - "Sanitize user data before client storage"
+    
+    session_middleware:
+      path: "src/middleware/session.js"
+      purpose: "Manage and encrypt user sessions"
+      features:
+        - "Basic encryption for client-side data"
+        - "Future upgrade path to stronger algorithms"
+
+upgrade_paths:
+  security:
+    basic_to_advanced:
+      description: "Upgrade to stronger encryption"
+      components:
+        - "Server-side session storage"
+        - "AES-256-GCM encryption"
+        - "Key rotation system"
+  
+  features:
+    recovery_specific:
+      description: "CR-specific adjustments"
+      components:
+        - "Theme configuration"
+        - "Content filtering by principle"
+        - "Sponsor connections"
+
+best_practices:
+  - "Never store unencrypted sensitive data in client-accessible storage"
+  - "Provide clear opt-in for identity disclosure"
+  - "Use security profiles to enable gradual feature rollout"
+  - "Keep crypto implementation modular for easy upgrades"
+  - "Sanitize all data before sending to client"
+  - "Use pseudonyms as first-class identity objects"
+
+implementation_strategy:
+  phase1:
+    - "Basic auth config and user model"
+    - "Pseudonym registration flow"
+    - "Session encryption (basic)"
+  phase2:
+    - "Email verification (optional)"
+    - "Security profile management"
+    - "Client-side data sanitization"
+  phase3:
+    - "Upgrade paths to advanced security"
+    - "Recovery-specific features" 

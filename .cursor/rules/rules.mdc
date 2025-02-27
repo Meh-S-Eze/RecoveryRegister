@@ -1,0 +1,176 @@
+---
+description: Guidelines for modular architecture and privacy-focused authentication system
+globs: **/*.js, **/*.jsx, **/*.ts, **/*.tsx, **/package.json, **/config/*.js
+alwaysApply: false
+---
+
+project_structure:
+  backend:
+    base_path: "server"
+    modular_structure:
+      - path: "features"
+        description: "Feature-specific modules, organized by domain"
+        submodules:
+          - path: "auth"
+            description: "Authentication feature module"
+            components:
+              - "config.js" # Auth configuration settings
+              - "routes.js" # Authentication routes
+              - "controller.js" # Business logic
+              - "model.js" # User model
+              - "middleware.js" # Auth middleware
+          - path: "groups" 
+            description: "Group management features"
+          - path: "meetings"
+            description: "Meeting management features"
+      - path: "core"
+        description: "Core application modules"
+        submodules:
+          - path: "config" 
+            description: "Core configuration"
+          - path: "middleware"
+            description: "Shared middleware"
+          - path: "utils"
+            description: "Utility functions"
+      - path: "models"
+        description: "Shared data models"
+      - path: "services"
+        description: "Reusable services like email and notifications"
+    
+  frontend:
+    base_path: "client"
+    modular_structure:
+      - path: "src/features"
+        description: "Feature-specific components"
+        submodules:
+          - path: "auth"
+            description: "Authentication UI components"
+            components:
+              - "components/LoginForm.jsx"
+              - "components/RegisterForm.jsx"
+              - "components/PrivacyControls.jsx"
+              - "hooks/useAuth.js"
+              - "context/AuthContext.jsx"
+          - path: "profile"
+            description: "User profile management"
+          - path: "recovery-groups"
+            description: "Recovery group features"
+      - path: "src/components"
+        description: "Shared UI components"
+        submodules:
+          - path: "ui"
+            description: "Basic UI elements"
+          - path: "layout"
+            description: "Layout components"
+          - path: "common"
+            description: "Common reusable components"
+      - path: "src/hooks"
+        description: "Custom React hooks"
+      - path: "src/context"
+        description: "Context providers"
+      - path: "src/utils"
+        description: "Utility functions"
+      - path: "src/styles"
+        description: "Style definitions"
+  
+  shared:
+    base_path: "shared"
+    description: "Code shared between frontend and backend"
+    components:
+      - path: "validation"
+        description: "Shared validation logic"
+      - path: "constants"
+        description: "Shared constants"
+      - path: "types"
+        description: "Type definitions"
+
+auth_system:
+  principles:
+    privacy:
+      - "no_forced_disclosure"
+      - "pseudonym_support" 
+      - "client_side_opacity"
+      - "automatic_anonymity"
+    security:
+      - "session_encryption"
+      - "data_sanitization"
+      - "security_profiles"
+  
+  implementation:
+    backend:
+      identity_management:
+        - rule: "Auto-determine anonymity based on email presence"
+          description: "Users without email should be automatically marked as anonymous"
+        - rule: "Support login with either pseudonym or email"
+          description: "Login should work regardless of how the user originally registered"
+        - rule: "Apply consistent data sanitization"
+          description: "Sanitize sensitive data before sending to clients"
+      
+    frontend:
+      identity_ui:
+        - rule: "No explicit anonymous checkbox"
+          description: "Don't show a checkbox for anonymity - determine automatically"
+        - rule: "Clear privacy indicators"
+          description: "Visually indicate current privacy/anonymity status"
+        - rule: "Identity choice first"
+          description: "First screen should let users choose pseudonym or email registration"
+
+coding_conventions:
+  naming:
+    - rule: "Feature-first naming"
+      description: "Name files with feature context first, e.g., authController.js"
+    - rule: "Privacy-aware naming"
+      description: "Use names that indicate privacy implications, e.g., 'sanitizedUser'"
+  
+  organization:
+    - rule: "Feature isolation"
+      description: "Features should be self-contained with minimal cross-dependencies"
+    - rule: "Privacy utilities centralization"
+      description: "Privacy-related utilities should be centralized for consistent use"
+  
+  comments:
+    - rule: "Privacy implications"
+      description: "Comment on privacy implications of functions and components"
+    - rule: "Anonymity handling"
+      description: "Document how anonymity is respected in each component"
+
+best_practices:
+  modularization:
+    - "Prefer vertical feature slices over horizontal layer slices"
+    - "Export only what's needed from each module"
+    - "Define clear interfaces between modules"
+    - "Consider domain-specific interfaces over generic ones"
+  
+  state_management:
+    - "Isolate authentication state from feature state"
+    - "Use context API for cross-cutting concerns like privacy settings"
+    - "Apply privacy filters consistently across state updates"
+  
+  privacy_first:
+    - "Never store unencrypted sensitive data in client-accessible storage"
+    - "Provide clear opt-in for identity disclosure"
+    - "Use security profiles to enable gradual feature rollout"
+    - "Keep crypto implementation modular for easy upgrades"
+    - "Sanitize all data before sending to client"
+    - "Use pseudonyms as first-class identity objects"
+  
+  testing:
+    - "Test privacy-focused scenarios explicitly"
+    - "Verify that anonymous and identified users see appropriate views"
+    - "Test the login flow with both pseudonym and email"
+
+migrations:
+  phase1:
+    - "Integrate authentication system into existing structure"
+    - "Apply automatic anonymity detection without UI changes"
+    - "Ensure login works with both identifiers"
+  
+  phase2:
+    - "Refactor server to feature-based structure"
+    - "Implement frontend privacy indicators"
+    - "Create shared validation logic"
+  
+  phase3:
+    - "Complete modularization of both frontend and backend"
+    - "Implement enhanced privacy controls"
+    - "Add security profile management" 

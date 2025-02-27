@@ -1,0 +1,149 @@
+---
+description: Privacy-focused, flexible authentication system compatible with Celebrate Recovery principles
+globs: client/src/features/auth/**, server/features/auth/**, server/middleware/session*, client/src/context/Auth*, shared/validation/auth*
+alwaysApply: true
+---
+
+
+auth_strategy:
+  type: "flexible_identity"
+  features:
+    - "pseudonym_support"
+    - "email_optional"
+    - "basic_encryption"
+    - "automatic_anonymity"
+  security_profile: "basic_protection"
+  
+principles:
+  privacy:
+    - "no_forced_disclosure"
+    - "pseudonym_support" 
+    - "client_side_opacity"
+    - "automatic_anonymity"
+  security:
+    - "session_encryption"
+    - "data_sanitization"
+    - "security_profiles"
+  
+implementation:
+  files:
+    auth_config:
+      path: "server/features/auth/config.js"
+      purpose: "Central configuration for authentication options"
+      key_settings:
+        - "allowPseudonyms: true"
+        - "requireEmail: false"
+        - "minPseudonymLength: 2"
+        - "clientSideEncryption: enabled"
+        - "autoAnonymous: true"
+    
+    user_model:
+      path: "server/features/auth/model.js"
+      purpose: "User data structure with privacy controls"
+      fields:
+        - "identityType: ['pseudonym', 'email']"
+        - "recoveryHash: String (private)"
+        - "securityProfile: String"
+        - "isAnonymous: Boolean (auto-determined)"
+    
+    client_protection:
+      path: "server/features/auth/utils/clientSanitize.js"
+      purpose: "Prevent sensitive data exposure to clients"
+      sensitive_keys:
+        - "email"
+        - "realName"
+        - "phone"
+    
+    auth_routes:
+      path: "server/features/auth/routes.js"
+      purpose: "Handle registration and login flows"
+      key_flows:
+        - "Register with pseudonym only (auto-anonymous)"
+        - "Register with optional email (not anonymous)"
+        - "Login with either pseudonym or email"
+        - "Sanitize user data before client storage"
+    
+    session_middleware:
+      path: "server/middleware/session.js"
+      purpose: "Manage and encrypt user sessions"
+      features:
+        - "Basic encryption for client-side data"
+        - "Future upgrade path to stronger algorithms"
+    
+    frontend_components:
+      registration_form:
+        path: "client/src/features/auth/components/RegisterForm.jsx"
+        purpose: "Registration form with automatic anonymity"
+        key_behaviors:
+          - "No explicit anonymous checkbox"
+          - "Clear indication of privacy implications based on form inputs"
+          - "Dynamic form that adapts to user choice of identifier type"
+      
+      login_form:
+        path: "client/src/features/auth/components/LoginForm.jsx"
+        purpose: "Unified login that accepts either pseudonym or email"
+        key_behaviors:
+          - "Single identifier field (auto-detects type)"
+          - "Privacy-preserving error messages"
+          
+      auth_context:
+        path: "client/src/features/auth/context/AuthContext.jsx"
+        purpose: "Manages authentication state and privacy settings"
+        key_behaviors:
+          - "Stores anonymity status"
+          - "Provides privacy mode switching"
+          - "Handles client-side data sanitization"
+      
+      privacy_indicator:
+        path: "client/src/features/auth/components/PrivacyIndicator.jsx"
+        purpose: "Visual indication of current privacy status"
+        key_behaviors:
+          - "Shows anonymous/identified status"
+          - "Updates automatically based on user state"
+
+ui_guidelines:
+  registration:
+    - "First screen: Ask for pseudonym or email, explain privacy implications of each"
+    - "No explicit checkbox for anonymity"
+    - "Clear visual indicators of what information will be visible to others"
+    - "Password step should be the same regardless of identity type"
+  
+  login:
+    - "Single input field that accepts both pseudonym or email"
+    - "Remember last login type used"
+    - "Privacy-preserving error messages (don't reveal if account exists)"
+  
+  post_login:
+    - "Clear visual indicator of current privacy status"
+    - "Option to enhance privacy (even for users who registered with email)"
+    - "Privacy settings easily accessible"
+
+client_side_privacy:
+  - "Client-side data filtering"
+  - "Privacy-aware component rendering"
+  - "Sanitize sensitive data before storing in local state"
+  - "Clear privacy indicators in UI"
+
+best_practices:
+  - "Never include anonymity checkbox - determine automatically from inputs"
+  - "Provide clear privacy implications for each identity choice"
+  - "Support fluid login with either identifier"
+  - "Keep all privacy logic consistent between frontend and backend"
+  - "Use feature flags for gradual rollout of advanced privacy features"
+
+upgrade_paths:
+  security:
+    basic_to_advanced:
+      description: "Upgrade to stronger encryption"
+      components:
+        - "Server-side session storage"
+        - "AES-256-GCM encryption"
+        - "Key rotation system"
+  
+  features:
+    recovery_specific:
+      description: "CR-specific adjustments"
+      components:
+        - "Theme configuration"
+        - "Content filtering by principle"
+        - "Sponsor connections" 
