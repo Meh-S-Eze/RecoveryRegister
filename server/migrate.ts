@@ -2,6 +2,8 @@ import { db } from './db';
 import { users, registrations, studySessions } from '@shared/schema';
 import { log } from './vite';
 import postgres from 'postgres';
+import bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 
 // Create the main database tables
 export async function createTables() {
@@ -10,12 +12,17 @@ export async function createTables() {
 
     // Create the tables if they don't exist
     const queries = [
-      // Users table
+      // Users table with enhanced auth support
       `CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT,
-        password_hash TEXT,
         email TEXT,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        registration_id INTEGER,
+        is_anonymous BOOLEAN DEFAULT FALSE,
+        preferred_contact TEXT DEFAULT 'username',
+        is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )`,
       
@@ -66,8 +73,9 @@ export async function createTables() {
     // Close the connection after creating tables
     await sql.end();
     
-    // Seed sample data for study sessions
+    // Seed sample data
     await seedStudySessions();
+    await seedAdminUser();
     
     return true;
   } catch (error) {
@@ -76,8 +84,8 @@ export async function createTables() {
   }
 }
 
-// Seed some initial data
-async function seedStudySessions() {
+// Seed some initial data for study sessions
+export async function seedStudySessions() {
   try {
     // Check if we already have study sessions
     const existingSessions = await db.select().from(studySessions);
@@ -113,6 +121,37 @@ async function seedStudySessions() {
     }
   } catch (error) {
     console.error('Error seeding study sessions:', error);
+    throw error;
+  }
+}
+
+// Create a default admin user for initial access
+export async function seedAdminUser() {
+  try {
+    // Check if admin user already exists
+    const existingAdmin = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'admin'));
+    
+    if (existingAdmin.length === 0) {
+      // Create an admin user
+      const passwordHash = await bcrypt.hash('admin123', 10);
+      
+      await db.insert(users).values({
+        username: 'admin',
+        email: 'admin@celebraterecovery.org',
+        passwordHash,
+        role: 'admin',
+        isAnonymous: false,
+        preferredContact: 'email',
+        isActive: true
+      });
+      
+      log('Default admin user created');
+    }
+  } catch (error) {
+    console.error('Error seeding admin user:', error);
     throw error;
   }
 }

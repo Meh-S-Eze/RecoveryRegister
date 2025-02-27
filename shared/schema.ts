@@ -2,19 +2,45 @@ import { pgTable, text, serial, integer, boolean, timestamp, date, time } from "
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table (kept from original schema)
+// Users table with enhanced auth support
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username"),
-  passwordHash: text("password_hash"),
   email: text("email"),
+  passwordHash: text("password_hash").notNull(),
+  role: text("role").notNull().default("user"), // "admin" or "user"
+  registrationId: integer("registration_id"), // link to registration if user is a registrant
+  isAnonymous: boolean("is_anonymous").default(false), // For users who prefer anonymity
+  preferredContact: text("preferred_contact").default("username"), // "username" or "email"
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  passwordHash: true,
-  email: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Auth schemas for login and registration
+export const userLoginSchema = z.object({
+  identifier: z.string().min(1, "Username or email is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const userRegisterSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").optional(),
+  email: z.string().email("Invalid email address").optional(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+  isAnonymous: z.boolean().optional().default(false),
+  preferredContact: z.enum(["username", "email"]).optional().default("username"),
+  registrationId: z.number().optional(),
+}).refine(data => data.username || data.email, {
+  message: "Either username or email must be provided",
+  path: ["username"]
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
