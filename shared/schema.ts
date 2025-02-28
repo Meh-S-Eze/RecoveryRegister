@@ -8,11 +8,12 @@ export const users = pgTable("users", {
   username: text("username"),
   email: text("email"),
   passwordHash: text("password_hash").notNull(),
-  role: text("role").notNull().default("user"), // "admin" or "user"
+  role: text("role").notNull().default("user"), // "super_admin", "admin", "pending_admin", or "user"
   registrationId: integer("registration_id"), // link to registration if user is a registrant
   isAnonymous: boolean("is_anonymous").default(false), // For users who prefer anonymity
   preferredContact: text("preferred_contact").default("username"), // "username" or "email"
   isActive: boolean("is_active").default(true),
+  phone: text("phone"), // Added for admin request contact info
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -20,6 +21,39 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
 });
+
+// Admin access requests table
+export const adminRequests = pgTable("admin_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  requestReason: text("request_reason"),
+  status: text("status").notNull().default("pending"), // "pending", "approved", "rejected"
+  reviewedBy: integer("reviewed_by").references(() => users.id),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAdminRequestSchema = createInsertSchema(adminRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const adminRequestSchema = z.object({
+  userId: z.number().int().positive(),
+  requestReason: z.string().min(1, "Please provide a reason for requesting admin access"),
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
+  reviewNotes: z.string().optional(),
+});
+
+export const updateAdminRequestSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected"]),
+  reviewNotes: z.string().optional(),
+});
+
+export type InsertAdminRequest = z.infer<typeof insertAdminRequestSchema>;
+export type AdminRequest = typeof adminRequests.$inferSelect;
 
 // Auth schemas for login and registration
 export const userLoginSchema = z.object({
@@ -34,6 +68,9 @@ export const userRegisterSchema = z.object({
   isAnonymous: z.boolean().optional().default(false),
   preferredContact: z.enum(["username", "email", "none"]).optional().default("username"),
   registrationId: z.number().int("Registration ID must be an integer").positive("Registration ID must be positive").optional(),
+  phone: z.string().optional(),
+  requestAdminAccess: z.boolean().optional().default(false),
+  requestReason: z.string().optional(),
 }).refine(data => {
   // If anonymous, no username required
   if (data.isAnonymous) return true;
@@ -46,6 +83,15 @@ export const userRegisterSchema = z.object({
 }, {
   message: "Either username, email, or registration ID must be provided for non-anonymous accounts",
   path: ["username"]
+}).refine(data => {
+  // If requesting admin access, email and phone are required
+  if (data.requestAdminAccess) {
+    return !!data.email && !!data.phone;
+  }
+  return true;
+}, {
+  message: "Email and phone number are required for admin access requests",
+  path: ["email"]
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

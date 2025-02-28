@@ -1,5 +1,5 @@
 import { db } from './db';
-import { users, registrations, studySessions } from '@shared/schema';
+import { users, registrations, studySessions, adminRequests } from '@shared/schema';
 import { log } from './vite';
 import postgres from 'postgres';
 import bcrypt from 'bcryptjs';
@@ -23,6 +23,7 @@ export async function createTables() {
         is_anonymous BOOLEAN DEFAULT FALSE,
         preferred_contact TEXT DEFAULT 'username',
         is_active BOOLEAN DEFAULT TRUE,
+        phone TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )`,
       
@@ -70,6 +71,18 @@ export async function createTables() {
         capacity INTEGER,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW()
+      )`,
+      
+      // Admin access requests table
+      `CREATE TABLE IF NOT EXISTS admin_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        request_reason TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        reviewed_by INTEGER REFERENCES users(id),
+        review_notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
       )`
     ];
 
@@ -85,7 +98,7 @@ export async function createTables() {
     
     // Seed sample data
     await seedStudySessions();
-    await seedAdminUser();
+    await seedSuperAdminUser();
     
     return true;
   } catch (error) {
@@ -135,7 +148,42 @@ export async function seedStudySessions() {
   }
 }
 
-// Create a default admin user for initial access
+// Create a super admin user for initial access and admin approvals
+export async function seedSuperAdminUser() {
+  try {
+    // Check if super admin user already exists
+    const existingSuperAdmin = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'super_admin'));
+    
+    if (existingSuperAdmin.length === 0) {
+      // Create a super admin user
+      const passwordHash = await bcrypt.hash('superadmin123', 10);
+      
+      await db.insert(users).values({
+        username: 'superadmin',
+        email: 'your-email@example.com', // Replace with your actual email
+        passwordHash,
+        role: 'super_admin',
+        isAnonymous: false,
+        preferredContact: 'email',
+        phone: '615-499-8379', // Your provided phone number
+        isActive: true
+      });
+      
+      log('Super admin user created - use this account to approve admin requests');
+    }
+    
+    // Also create a regular admin for testing if needed
+    await seedAdminUser();
+  } catch (error) {
+    console.error('Error seeding super admin user:', error);
+    throw error;
+  }
+}
+
+// Create a regular admin user for initial access
 export async function seedAdminUser() {
   try {
     // Check if admin user already exists

@@ -11,7 +11,10 @@ import {
   userProfiles,
   type UserProfile,
   type InsertUserProfile,
-  type UpdateUserProfile
+  type UpdateUserProfile,
+  adminRequests,
+  type AdminRequest,
+  type InsertAdminRequest
 } from "@shared/schema";
 
 // modify the interface with any CRUD methods
