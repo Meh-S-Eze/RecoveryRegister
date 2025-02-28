@@ -42,12 +42,17 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
         password: credentials.password
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Login successful, user data:", data);
       toast({
         title: "Login successful",
         description: "You are now logged in as an administrator.",
       });
-      onLoginSuccess();
+      
+      // Small delay to ensure session is properly set before checking auth status
+      setTimeout(() => {
+        onLoginSuccess();
+      }, 500);
     },
     onError: (error: any) => {
       setAuthError("Invalid username or password. Please try again.");

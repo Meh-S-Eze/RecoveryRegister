@@ -22,10 +22,26 @@ export const storage = new PostgresStorage();
 
 // Auth middleware
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  console.log("Checking authentication status...");
+  
   // @ts-ignore - session is added by express-session
-  if (req.session && req.session.userId) {
-    return next();
+  if (req.session) {
+    console.log("Session exists:", {
+      id: req.session.id,
+      userId: req.session.userId,
+      userRole: req.session.userRole
+    });
+    
+    if (req.session.userId) {
+      console.log("User is authenticated, userId:", req.session.userId);
+      return next();
+    } else {
+      console.log("User is not authenticated, no userId in session");
+    }
+  } else {
+    console.log("No session exists");
   }
+  
   return res.status(401).json({ error: "Not authenticated" });
 };
 
@@ -54,6 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
+      console.log("Login attempt with:", JSON.stringify(req.body, null, 2));
       const { identifier, password } = userLoginSchema.parse(req.body);
       
       // Try to find user by username or email
@@ -66,15 +83,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!user) {
+        console.log("Login failed: user not found with identifier:", identifier);
         return res.status(401).json({ message: "Invalid credentials" });
       }
+      
+      console.log("Found user:", user.id, user.username, user.role);
       
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
       
       if (!isPasswordValid) {
+        console.log("Login failed: invalid password for user:", user.username);
         return res.status(401).json({ message: "Invalid credentials" });
       }
+      
+      console.log("User authenticated successfully:", user.username);
       
       // Set session data
       // @ts-ignore - session is added by express-session
@@ -82,13 +105,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // @ts-ignore - session is added by express-session
       req.session.userRole = user.role;
       
-      return res.json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        isAnonymous: user.isAnonymous,
-        preferredContact: user.preferredContact
+      // Save session explicitly to ensure it's stored before sending response
+      // @ts-ignore - session is added by express-session
+      req.session.save((err) => {
+        if (err) {
+          console.error("Error saving session:", err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        
+        console.log("Session saved successfully for user:", user.username);
+        console.log("Session data:", JSON.stringify({
+          userId: req.session.userId,
+          userRole: req.session.userRole
+        }, null, 2));
+        
+        return res.json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isAnonymous: user.isAnonymous,
+          preferredContact: user.preferredContact
+        });
       });
     } catch (error) {
       if (error instanceof ZodError) {

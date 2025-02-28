@@ -152,21 +152,36 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   
-  // Check authentication status on component mount
+  // Check authentication status on component mount and when login status changes
+  const [checkCount, setCheckCount] = useState(0);
+  
+  // Force a re-check after successful login
+  const recheckAuth = () => {
+    setCheckCount(prev => prev + 1);
+  };
+  
   useEffect(() => {
     const checkAuth = async () => {
       setAuthLoading(true);
       try {
+        console.log("Checking authentication status...");
         const response = await fetch('/api/auth/me', {
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
         });
         
         if (response.ok) {
           const userData = await response.json();
+          console.log("Auth check response:", userData);
           // Only allow admin or super_admin roles
           if (userData && (userData.role === 'admin' || userData.role === 'super_admin')) {
+            console.log("User is authenticated as admin");
             setIsAuthenticated(true);
           } else {
+            console.log("User is not an admin");
             setIsAuthenticated(false);
             toast({
               title: "Access denied",
@@ -175,6 +190,7 @@ export default function Admin() {
             });
           }
         } else {
+          console.log("Auth check failed with status:", response.status);
           setIsAuthenticated(false);
         }
       } catch (error) {
@@ -186,7 +202,7 @@ export default function Admin() {
     };
     
     checkAuth();
-  }, [toast]);
+  }, [toast, checkCount]);
   
   const handleLogout = async () => {
     try {
@@ -489,7 +505,7 @@ export default function Admin() {
           </div>
         </div>
         
-        <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />
+        <AdminLogin onLoginSuccess={() => recheckAuth()} />
       </div>
     );
   }
