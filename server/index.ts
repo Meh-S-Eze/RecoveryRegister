@@ -1,23 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
-import cors from 'cors';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createTables } from "./migrate";
-import { configureSession, corsOptions } from "./core/middleware/session";
 
 const app = express();
-
-// Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configure CORS
-app.use(cors(corsOptions));
-
-// Configure session
-app.use(configureSession());
-
-// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -60,22 +49,17 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
-  // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Unhandled error:', err);
-    
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-    
-    // Don't expose internal error details in production
-    const response = process.env.NODE_ENV === 'production'
-      ? { message: status === 500 ? 'Internal Server Error' : message }
-      : { message, stack: err.stack };
 
-    res.status(status).json(response);
+    res.status(status).json({ message });
+    throw err;
   });
 
-  // Set up Vite in development, static serving in production
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
@@ -83,24 +67,27 @@ app.use((req, res, next) => {
   }
 
   // Try to use port 5000 exclusively
+  // this serves both the API and the client
   const port = 5000;
   
   // First, try to ensure the port is free
   const findAndKillProcess = () => {
     try {
+      // Log the attempt
       log(`Attempting to free port ${port}...`);
       
+      // The real attempt to start the server happens after this message
       server.listen({
         port,
         host: "0.0.0.0",
         reusePort: true,
       }, () => {
-        log(`Server running on port ${port}`);
-        log(`Environment: ${app.get("env")}`);
+        log(`serving on port ${port}`);
       }).on('error', (e: any) => {
         if (e.code === 'EADDRINUSE') {
           log(`Port ${port} is still in use. Please manually restart the workflow.`);
           setTimeout(() => {
+            // Try once more with the same port after a delay
             log(`Retrying port ${port} after delay...`);
             findAndKillProcess();
           }, 1000);
@@ -115,5 +102,6 @@ app.use((req, res, next) => {
     }
   };
   
+  // Start the process to ensure port 5000 is available
   findAndKillProcess();
 })();

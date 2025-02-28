@@ -16,6 +16,7 @@ const accountSchema = z.object({
   createAccount: z.boolean().default(false),
   username: z.string().min(3, "Username must be at least 3 characters").optional(),
   password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  preferredContact: z.enum(["username", "email", "none"]).default("username"),
 });
 
 // Refine schema based on createAccount value
@@ -49,41 +50,21 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
   const { toast } = useToast();
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
-  // Log the received values for debugging
-  console.log("AccountCreation received values:", { email, name, registrationId });
-
-  // Extract username from email if available
-  const getInitialUsername = () => {
-    // Ensure email is a non-empty string
-    if (email && typeof email === 'string' && email.trim() !== '') {
-      console.log("Using email as username:", email);
-      // Use the entire email as username
-      return email;
-    } else if (name && typeof name === 'string' && name.trim() !== '') {
-      console.log("Using name as username:", name);
-      // Fall back to name if email is not available
-      return name;
-    }
-    console.log("No valid email or name found, using empty string");
-    return "";
-  };
-
-  // Calculate the username once on component initialization
-  const initialUsername = getInitialUsername();
-  console.log("Initial username set to:", initialUsername);
-
   const form = useForm<AccountValues>({
     resolver: zodResolver(conditionalAccountSchema),
     defaultValues: {
       createAccount: false,
-      username: initialUsername,
+      username: name || "",
       password: "",
+      preferredContact: email ? "email" : "username",
     },
     mode: "onChange",
   });
   
   // Watch for changes to createAccount
   const createAccount = form.watch("createAccount");
+  
+  // No longer watching isAnonymous as we're removing that option
 
   const registerUser = useMutation({
     mutationFn: (values: AccountValues) => {
@@ -94,15 +75,12 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
 
       const registerData = {
         username: values.username,
-        // Ensure email is always a string, never null
-        email: email || "",
+        email: email,
         password: values.password,
-        preferredContact: "username", // Default value
+        preferredContact: values.preferredContact,
         registrationId: registrationId
       };
 
-      console.log("Sending registration data:", registerData);
-      
       return apiRequest("POST", "/api/auth/register", registerData)
         .then(res => res.json());
     },
@@ -120,7 +98,6 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
       onAccountCreated(data);
     },
     onError: (error: any) => {
-      console.error("Account creation error:", error);
       toast({
         title: "Account creation failed",
         description: error.message || "There was a problem creating your account. Please try again.",
@@ -135,7 +112,6 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
       return;
     }
     
-    console.log("Submitting form values:", values);
     registerUser.mutate(values);
   };
 
@@ -192,7 +168,7 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      This will be your public identifier. You can use a nickname, made-up name, or any name you prefer - it doesn't have to be your real name.
+                      This will be your public identifier in the system
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -221,14 +197,54 @@ export function AccountCreation({ onAccountCreated, onSkip, email, name, registr
                 )}
               />
 
-              {/* Replaced contact method selection with informational text */}
-              <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                <h4 className="text-sm font-medium text-gray-800 mb-1">Account Information</h4>
-                <p className="text-xs text-gray-600">
-                  Creating an account allows you to sign in later to update your name, email, 
-                  or other information. Your account details are kept private and secure.
-                </p>
-              </div>
+              <FormField
+                control={form.control}
+                name="preferredContact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Preferred Contact Method</FormLabel>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="contact-none"
+                          value="none"
+                          checked={field.value === "none"}
+                          onChange={() => field.onChange("none")}
+                          className="h-4 w-4 text-primary"
+                        />
+                        <label htmlFor="contact-none" className="text-sm">No contact (check website for updates)</label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="contact-username"
+                          value="username"
+                          checked={field.value === "username"}
+                          onChange={() => field.onChange("username")}
+                          className="h-4 w-4 text-primary"
+                        />
+                        <label htmlFor="contact-username" className="text-sm">Contact via username (on website)</label>
+                      </div>
+                      
+                      {email && (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="contact-email"
+                            value="email"
+                            checked={field.value === "email"}
+                            onChange={() => field.onChange("email")}
+                            className="h-4 w-4 text-primary"
+                          />
+                          <label htmlFor="contact-email" className="text-sm">Contact via email ({email})</label>
+                        </div>
+                      )}
+                    </div>
+                  </FormItem>
+                )}
+              />
             </div>
           )}
 

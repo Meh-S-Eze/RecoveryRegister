@@ -334,7 +334,7 @@ export function RegistrationSteps() {
                           />
                         </FormControl>
                         <FormDescription className="text-xs text-[#9CA3AF]">
-                          You can use a nickname, made-up name, or any name you prefer - it doesn't have to be your real name
+                          You can use your first name, a nickname, or remain anonymous
                         </FormDescription>
                       </FormItem>
                     )}
