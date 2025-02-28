@@ -705,7 +705,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       
       // Validate admin request data
-      const { requestReason } = adminRequestSchema.parse(req.body);
+      const adminRequestData = adminRequestSchema.parse({
+        ...req.body,
+        userId // Add the user ID from the session
+      });
       
       // Check if user already has an admin request
       const existingRequests = await storage.getAdminRequestsByUser(userId);
@@ -715,19 +718,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create admin request
       const adminRequest = await storage.createAdminRequest({
-        userId,
-        requestReason,
+        userId: adminRequestData.userId,
+        requestReason: adminRequestData.requestReason,
         status: "pending"
       });
       
       // Update user role to pending_admin
       const user = await storage.getUser(userId);
       if (user) {
-        // Need to implement updateUserRole method
-        const updatedUser = await storage.createUser({
-          ...user,
-          role: "pending_admin"
-        });
+        // Use the updateUserRole method
+        const updatedUser = await storage.updateUserRole(userId, "pending_admin");
+        
         // Update session
         // @ts-ignore - session is added by express-session
         req.session.userRole = "pending_admin";
@@ -865,11 +866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updateData.status === "approved") {
         const requestUser = await storage.getUser(adminRequest.userId);
         if (requestUser) {
-          // Need to implement updateUserRole method
-          await storage.createUser({
-            ...requestUser,
-            role: "admin"
-          });
+          // Use the updateUserRole method
+          await storage.updateUserRole(adminRequest.userId, "admin");
         }
       }
       

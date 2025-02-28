@@ -173,4 +173,58 @@ export class PostgresStorage implements IStorage {
       .returning();
     return result.length > 0;
   }
+
+  // Admin Request methods
+  async getAdminRequests(): Promise<AdminRequest[]> {
+    return await db.select().from(tables.adminRequests);
+  }
+  
+  async getAdminRequest(id: number): Promise<AdminRequest | undefined> {
+    const requests = await db.select().from(tables.adminRequests).where(eq(tables.adminRequests.id, id));
+    return requests[0];
+  }
+  
+  async getAdminRequestsByUser(userId: number): Promise<AdminRequest[]> {
+    return await db.select()
+      .from(tables.adminRequests)
+      .where(eq(tables.adminRequests.userId, userId));
+  }
+  
+  async createAdminRequest(request: InsertAdminRequest): Promise<AdminRequest> {
+    const result = await db.insert(tables.adminRequests).values(request).returning();
+    return result[0];
+  }
+  
+  async updateAdminRequest(
+    id: number, 
+    status: string, 
+    reviewedBy: number,
+    notes?: string
+  ): Promise<AdminRequest | undefined> {
+    const updateData: any = {
+      status,
+      reviewedBy,
+      updatedAt: new Date()
+    };
+    
+    if (notes) {
+      updateData.reviewNotes = notes;
+    }
+    
+    const result = await db.update(tables.adminRequests)
+      .set(updateData)
+      .where(eq(tables.adminRequests.id, id))
+      .returning();
+      
+    return result[0];
+  }
+  
+  // Add the missing updateUserRole method
+  async updateUserRole(userId: number, role: string): Promise<User | undefined> {
+    const result = await db.update(tables.users)
+      .set({ role })
+      .where(eq(tables.users.id, userId))
+      .returning();
+    return result[0];
+  }
 }
