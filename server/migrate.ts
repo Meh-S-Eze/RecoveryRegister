@@ -83,6 +83,14 @@ export async function createTables() {
         review_notes TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
+      )`,
+      
+      // Session store table for connect-pg-simple
+      `CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL COLLATE "default",
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL,
+        CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
       )`
     ];
 
@@ -99,6 +107,7 @@ export async function createTables() {
     // Seed sample data
     await seedStudySessions();
     await seedSuperAdminUser();
+    await seedTestUser();
     
     return true;
   } catch (error) {
@@ -210,6 +219,37 @@ export async function seedAdminUser() {
     }
   } catch (error) {
     console.error('Error seeding admin user:', error);
+    throw error;
+  }
+}
+
+// Create a test user for login testing
+export async function seedTestUser() {
+  try {
+    // Check if test user already exists
+    const existingTestUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, 'test'));
+    
+    if (existingTestUser.length === 0) {
+      // Create a test user with admin role
+      const passwordHash = await bcrypt.hash('testtest1', 10);
+      
+      await db.insert(users).values({
+        username: 'test',
+        email: 'test@example.com',
+        passwordHash,
+        role: 'admin',
+        isAnonymous: false,
+        preferredContact: 'email',
+        isActive: true
+      });
+      
+      log('Test user created with username "test" and password "testtest1"');
+    }
+  } catch (error) {
+    console.error('Error seeding test user:', error);
     throw error;
   }
 }
