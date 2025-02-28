@@ -38,6 +38,13 @@ export interface IStorage {
   getRegistration(id: number): Promise<Registration | undefined>;
   createRegistration(registration: InsertRegistration): Promise<Registration>;
   
+  // Admin Request methods
+  getAdminRequests(): Promise<AdminRequest[]>;
+  getAdminRequest(id: number): Promise<AdminRequest | undefined>;
+  getAdminRequestsByUser(userId: number): Promise<AdminRequest[]>;
+  createAdminRequest(request: InsertAdminRequest): Promise<AdminRequest>;
+  updateAdminRequest(id: number, status: string, reviewedBy: number, notes?: string): Promise<AdminRequest | undefined>;
+  
   // Study Session methods
   getStudySessions(): Promise<StudySession[]>;
   getStudySession(id: number): Promise<StudySession | undefined>;
@@ -53,18 +60,22 @@ export class MemStorage implements IStorage {
   private registrations: Map<number, Registration>;
   private studySessions: Map<number, StudySession>;
   private userProfiles: Map<number, UserProfile>;
+  private adminRequests: Map<number, AdminRequest>;
   private userCurrentId: number;
   private registrationCurrentId: number;
   private studySessionCurrentId: number;
+  private adminRequestCurrentId: number;
 
   constructor() {
     this.users = new Map();
     this.registrations = new Map();
     this.studySessions = new Map();
     this.userProfiles = new Map();
+    this.adminRequests = new Map();
     this.userCurrentId = 1;
     this.registrationCurrentId = 1;
     this.studySessionCurrentId = 1;
+    this.adminRequestCurrentId = 1;
   }
   
   // We'll add the sample data after all methods are defined
@@ -88,15 +99,16 @@ export class MemStorage implements IStorage {
     const now = new Date();
     
     const user: User = { 
-      ...insertUser,
       id,
       username: insertUser.username ?? null,
       email: insertUser.email ?? null,
+      passwordHash: insertUser.passwordHash,
       role: insertUser.role ?? "user",
       registrationId: insertUser.registrationId ?? null,
       isAnonymous: insertUser.isAnonymous ?? false,
       preferredContact: insertUser.preferredContact ?? "username",
       isActive: insertUser.isActive ?? true,
+      phone: insertUser.phone ?? null,
       createdAt: now
     };
     
@@ -316,6 +328,65 @@ export class MemStorage implements IStorage {
   
   async deleteStudySession(id: number): Promise<boolean> {
     return this.studySessions.delete(id);
+  }
+  
+  // Admin Request methods
+  async getAdminRequests(): Promise<AdminRequest[]> {
+    return Array.from(this.adminRequests.values());
+  }
+  
+  async getAdminRequest(id: number): Promise<AdminRequest | undefined> {
+    return this.adminRequests.get(id);
+  }
+  
+  async getAdminRequestsByUser(userId: number): Promise<AdminRequest[]> {
+    return Array.from(this.adminRequests.values()).filter(
+      (request) => request.userId === userId
+    );
+  }
+  
+  async createAdminRequest(request: InsertAdminRequest): Promise<AdminRequest> {
+    const id = this.adminRequestCurrentId++;
+    const now = new Date();
+    
+    const adminRequest: AdminRequest = {
+      id,
+      userId: request.userId,
+      requestReason: request.requestReason ?? null,
+      status: request.status ?? "pending",
+      reviewedBy: request.reviewedBy ?? null,
+      reviewNotes: request.reviewNotes ?? null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.adminRequests.set(id, adminRequest);
+    return adminRequest;
+  }
+  
+  async updateAdminRequest(
+    id: number, 
+    status: string, 
+    reviewedBy: number, 
+    notes?: string
+  ): Promise<AdminRequest | undefined> {
+    const request = this.adminRequests.get(id);
+    
+    if (!request) {
+      return undefined;
+    }
+    
+    const now = new Date();
+    const updatedRequest: AdminRequest = {
+      ...request,
+      status,
+      reviewedBy,
+      reviewNotes: notes ?? request.reviewNotes,
+      updatedAt: now
+    };
+    
+    this.adminRequests.set(id, updatedRequest);
+    return updatedRequest;
   }
 }
 
