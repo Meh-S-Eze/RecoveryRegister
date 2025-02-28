@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Table, 
@@ -30,7 +30,8 @@ import {
   PhoneIcon,
   MailIcon,
   ExternalLinkIcon,
-  RepeatIcon
+  RepeatIcon,
+  LogOutIcon
 } from "lucide-react";
 import type { Registration, StudySession, InsertStudySession } from "@shared/schema";
 import { Helmet } from "react-helmet";
@@ -67,6 +68,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { InputDatePicker } from "@/components/ui/date-picker";
 import { DaySelector, type DayOfWeek } from "@/components/ui/day-selector";
+import { AdminLogin } from "@/components/AdminLogin";
 
 // Form schemas for study session management
 const studySessionSchema = z.object({
@@ -147,6 +149,53 @@ export default function Admin() {
   const { toast } = useToast();
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<StudySession | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Check authentication status on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          // Only allow admin or super_admin roles
+          if (userData && (userData.role === 'admin' || userData.role === 'super_admin')) {
+            setIsAuthenticated(true);
+          } else {
+            setIsAuthenticated(false);
+            toast({
+              title: "Access denied",
+              description: "You don't have administrator privileges",
+              variant: "destructive"
+            });
+          }
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsAuthenticated(false);
+      }
+    };
+    
+    checkAuth();
+  }, [toast]);
+  
+  const handleLogout = async () => {
+    try {
+      await apiRequest('POST', '/api/auth/logout', {});
+      setIsAuthenticated(false);
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
   
   // Query for registrations
   const { data: registrations, isLoading: registrationsLoading, error: registrationsError, refetch: refetchRegistrations } = useQuery<Registration[]>({
@@ -395,6 +444,36 @@ export default function Admin() {
     );
   }
 
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <Helmet>
+          <title>Admin Login | Celebrate Recovery</title>
+        </Helmet>
+        
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-[#374151]">Admin Dashboard</h1>
+              <p className="text-[#6B7280]">Please log in to access the admin features</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = '/'}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Button>
+          </div>
+        </div>
+        
+        <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <Helmet>
@@ -407,14 +486,24 @@ export default function Admin() {
             <h1 className="text-2xl font-bold text-[#374151]">Admin Dashboard</h1>
             <p className="text-[#6B7280]">Manage step study registrations and scheduled sessions</p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = '/'}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOutIcon className="h-4 w-4" />
+              <span>Logout</span>
+            </Button>
+          </div>
         </div>
       </div>
       
