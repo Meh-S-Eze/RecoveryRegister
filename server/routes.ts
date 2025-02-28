@@ -155,16 +155,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Generated username '${finalUsername}' from registration name '${registrationData.name}'`);
       }
       
+      // Determine role - if requesting admin, set to pending_admin
+      const role = data.requestAdminAccess ? 'pending_admin' : 'user';
+      
       // Create user
       const user = await storage.createUser({
         username: finalUsername,
         email: data.email || (registrationData ? registrationData.email : undefined),
         passwordHash,
-        role: 'user',
+        role,
         isAnonymous: data.isAnonymous,
         preferredContact: data.preferredContact || (data.email ? 'email' : 'none'),
-        registrationId: data.registrationId
+        registrationId: data.registrationId,
+        phone: data.phone
       });
+      
+      // If requesting admin access, create an admin request
+      if (data.requestAdminAccess && data.requestReason) {
+        await storage.createAdminRequest({
+          userId: user.id,
+          requestReason: data.requestReason,
+          status: "pending"
+        });
+        console.log(`Created admin request for user ${user.id} with reason: ${data.requestReason}`);
+      }
       
       // Set session data
       // @ts-ignore - session is added by express-session
@@ -178,7 +192,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         role: user.role,
         isAnonymous: user.isAnonymous,
-        preferredContact: user.preferredContact
+        preferredContact: user.preferredContact,
+        phone: user.phone,
+        requestedAdmin: data.requestAdminAccess || false
       });
     } catch (error) {
       if (error instanceof ZodError) {
