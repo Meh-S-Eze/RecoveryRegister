@@ -36,7 +36,11 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
   const login = useMutation({
     mutationFn: (credentials: LoginFormValues) => {
-      return apiRequest("POST", "/api/auth/login", credentials);
+      // Convert from username/password to identifier/password
+      return apiRequest("POST", "/api/auth/login", {
+        identifier: credentials.username,
+        password: credentials.password
+      });
     },
     onSuccess: () => {
       toast({
