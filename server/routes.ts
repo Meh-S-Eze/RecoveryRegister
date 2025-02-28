@@ -47,18 +47,37 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 
 // Admin middleware
 const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  console.log("Checking admin authorization...");
+  
   // @ts-ignore - session is added by express-session
-  const userId = req.session?.userId;
+  if (!req.session) {
+    console.log("Admin check failed: No session found");
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  
+  // @ts-ignore - session is added by express-session
+  const userId = req.session.userId;
+  console.log("Admin check - session user ID:", userId);
   
   if (!userId) {
+    console.log("Admin check failed: No userId in session");
     return res.status(401).json({ error: "Not authenticated" });
   }
   
   try {
     const user = await storage.getUser(userId);
+    console.log("Admin check - user data:", user ? {
+      id: user.id,
+      username: user.username,
+      role: user.role
+    } : 'User not found');
+    
     if (user && (user.role === 'admin' || user.role === 'super_admin')) {
+      console.log("Admin check passed: User has admin privileges");
       return next();
     }
+    
+    console.log("Admin check failed: User does not have admin privileges");
     return res.status(403).json({ error: "Not authorized" });
   } catch (error) {
     console.error('Admin check error:', error);
@@ -262,18 +281,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  app.get("/api/auth/me", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
+      console.log("Checking user session in /api/auth/me");
+      
+      // @ts-ignore - session is added by express-session
+      if (!req.session || !req.session.userId) {
+        console.log("No valid session found in /api/auth/me");
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
       // @ts-ignore - session is added by express-session
       const userId = req.session.userId;
+      console.log("Found userId in session:", userId);
+      
       const user = await storage.getUser(userId);
+      console.log("User data from storage:", user ? {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      } : 'User not found');
       
       if (!user) {
+        console.log("User not found in database, destroying session");
         // @ts-ignore - session is added by express-session
         req.session.destroy(() => {});
         return res.status(404).json({ message: "User not found" });
       }
       
+      console.log("User authenticated successfully:", user.username);
       return res.json({
         id: user.id,
         username: user.username,
