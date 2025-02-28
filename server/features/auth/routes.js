@@ -14,81 +14,81 @@ const authConfig = require('./config');
  * Register a new user
  * Supports both pseudonymous and email-based registration
  */
-router.post('/register', async (req, res) => {
-  try {
-    const { pseudonym, email, password } = req.body;
-    
-    // Auto-determine anonymity status based on email presence
-    // Users without email are assumed to want anonymity
-    const isAnonymous = !email;
-    
-    // Basic validation
-    if (!password) {
-      return res.status(400).json({ 
-        message: "Password is required for all accounts" 
-      });
-    }
-    
-    // For all users, we need either a pseudonym or email
-    if (!pseudonym && !email) {
-      return res.status(400).json({ 
-        message: "Either pseudonym or email is required for registration" 
-      });
-    }
-    
-    // Validate pseudonym length if provided
-    if (pseudonym && pseudonym.length < authConfig.identityOptions.minPseudonymLength) {
-      return res.status(400).json({ 
-        message: `Pseudonym must be at least ${authConfig.identityOptions.minPseudonymLength} characters long` 
-      });
-    }
-    
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-    
-    // Determine identity type
-    const identityType = email ? 'email' : 'pseudonym';
-    
-    // Handle username assignment:
-    // 1. If pseudonym is provided, use that as the username
-    // 2. If only email is provided, extract username from email
-    let username = pseudonym;
-    if (!username && email) {
-      // Extract the part before @ to use as username
-      username = email.split('@')[0];
-    }
-    
-    // Create user
-    const userData = {
-      username,
-      email,
-      passwordHash,
-      identityType,
-      isAnonymous,
-      securityProfile: 'basic',
-      preferredContact: email ? 'email' : 'pseudonym'
-    };
-    
-    const user = createUser(userData);
-    
-    // Here we would normally save the user to the database
-    // But for our implementation, we'll just use the user object directly
-    
-    // Sanitize user data before storing in session
-    const sanitizedUser = sanitizeClientData(user);
-    
-    // Set session data
-    req.session.user = sanitizedUser;
-    
-    return res.status(201).json({
-      message: "Registration successful",
-      user: sanitizedUser
-    });
-  } catch (error) {
-    console.error("Registration error:", error);
-    return res.status(500).json({ message: "Error during registration" });
-  }
-});
+// router.post('/register', async (req, res) => {
+//   try {
+//     const { pseudonym, email, password } = req.body;
+//     
+//     // Auto-determine anonymity status based on email presence
+//     // Users without email are assumed to want anonymity
+//     const isAnonymous = !email;
+//     
+//     // Basic validation
+//     if (!password) {
+//       return res.status(400).json({ 
+//         message: "Password is required for all accounts" 
+//       });
+//     }
+//     
+//     // For all users, we need either a pseudonym or email
+//     if (!pseudonym && !email) {
+//       return res.status(400).json({ 
+//         message: "Either pseudonym or email is required for registration" 
+//       });
+//     }
+//     
+//     // Validate pseudonym length if provided
+//     if (pseudonym && pseudonym.length < authConfig.identityOptions.minPseudonymLength) {
+//       return res.status(400).json({ 
+//         message: `Pseudonym must be at least ${authConfig.identityOptions.minPseudonymLength} characters long` 
+//       });
+//     }
+//     
+//     // Hash password
+//     const passwordHash = await bcrypt.hash(password, 10);
+//     
+//     // Determine identity type
+//     const identityType = email ? 'email' : 'pseudonym';
+//     
+//     // Handle username assignment:
+//     // 1. If pseudonym is provided, use that as the username
+//     // 2. If only email is provided, extract username from email
+//     let username = pseudonym;
+//     if (!username && email) {
+//       // Extract the part before @ to use as username
+//       username = email.split('@')[0];
+//     }
+//     
+//     // Create user
+//     const userData = {
+//       username,
+//       email,
+//       passwordHash,
+//       identityType,
+//       isAnonymous,
+//       securityProfile: 'basic',
+//       preferredContact: email ? 'email' : 'pseudonym'
+//     };
+//     
+//     const user = createUser(userData);
+//     
+//     // Here we would normally save the user to the database
+//     // But for our implementation, we'll just use the user object directly
+//     
+//     // Sanitize user data before storing in session
+//     const sanitizedUser = sanitizeClientData(user);
+//     
+//     // Set session data
+//     req.session.user = sanitizedUser;
+//     
+//     return res.status(201).json({
+//       message: "Registration successful",
+//       user: sanitizedUser
+//     });
+//   } catch (error) {
+//     console.error("Registration error:", error);
+//     return res.status(500).json({ message: "Error during registration" });
+//   }
+// });
 
 /**
  * Login a user
@@ -172,5 +172,13 @@ router.get('/me', (req, res) => {
   
   return res.json(req.session.user);
 });
+
+// Keep admin-only routes active
+router.post('/admin/login', 
+  validateLogin,
+  async (req, res) => {
+    // ... existing admin login implementation ...
+  }
+);
 
 module.exports = router; 

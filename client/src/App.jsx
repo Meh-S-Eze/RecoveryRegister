@@ -15,7 +15,6 @@ const Home = () => (
     <p>Welcome to the privacy-focused registration system for Celebrate Recovery.</p>
     <div className="auth-actions">
       <Link to="/login" className="btn btn-primary">Log In</Link>
-      <Link to="/register" className="btn btn-secondary">Create Account</Link>
     </div>
   </div>
 );
@@ -104,10 +103,14 @@ const App = () => {
             <Route 
               path="/register" 
               element={
-                <AnonymousOnlyRoute>
-                  <RegisterPage />
-                </AnonymousOnlyRoute>
-              } 
+                <div className="registration-message">
+                  <h2>Account Setup Assistance</h2>
+                  <p>Please contact your Celebrate Recovery Leader for access</p>
+                  <p className="contact-info">
+                    Email: <a href="mailto:support@crrecovery.org">support@crrecovery.org</a>
+                  </p>
+                </div>
+              }
             />
             
             <Route 

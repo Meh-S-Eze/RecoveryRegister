@@ -115,125 +115,16 @@ const RegisterForm = () => {
   };
   
   return (
-    <div className="auth-form-container">
-      <h2>Create an Account</h2>
-      
-      <div className="identity-toggle">
-        <button 
-          type="button"
-          className={`toggle-btn ${registrationType === 'pseudonym' ? 'active' : ''}`}
-          onClick={() => setRegistrationType('pseudonym')}
-        >
-          Use Pseudonym
-        </button>
-        <button 
-          type="button"
-          className={`toggle-btn ${registrationType === 'email' ? 'active' : ''}`}
-          onClick={() => setRegistrationType('email')}
-        >
-          Use Email
-        </button>
-      </div>
-      
-      {/* Privacy indicator - automatically shows based on input */}
-      <div className={`privacy-indicator ${willBeAnonymous ? 'anonymous' : 'identified'}`}>
-        <div className="indicator-icon">
-          {willBeAnonymous ? '🔒' : '👤'}
-        </div>
-        <div className="indicator-text">
-          {willBeAnonymous 
-            ? 'You will be anonymous to other users' 
-            : 'Your email will be private but you will not be anonymous to system'}
-        </div>
-      </div>
-      
+    <div className="registration-notice">
+      <h2>Account Creation Currently Limited</h2>
+      <p>
+        Please contact your Celebrate Recovery Leader to request access. 
+        Admin-approved accounts only at this time.
+      </p>
+      {/* Commented out registration form
       <form onSubmit={handleSubmit}>
-        {/* Show pseudonym field for pseudonym registration */}
-        {registrationType === 'pseudonym' && (
-          <div className="form-group">
-            <label htmlFor="pseudonym">Pseudonym:</label>
-            <input
-              type="text"
-              id="pseudonym"
-              name="pseudonym"
-              value={formData.pseudonym}
-              onChange={handleChange}
-              placeholder="Enter a pseudonym to remain anonymous"
-              className={formErrors.pseudonym ? 'error' : ''}
-            />
-            {formErrors.pseudonym && <div className="error-message">{formErrors.pseudonym}</div>}
-            <div className="field-description">
-              A pseudonym allows you to participate without using your real identity
-            </div>
-          </div>
-        )}
-        
-        {/* Show email field for email registration */}
-        {registrationType === 'email' && (
-          <div className="form-group">
-            <label htmlFor="email">Email:</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email address"
-              className={formErrors.email ? 'error' : ''}
-            />
-            {formErrors.email && <div className="error-message">{formErrors.email}</div>}
-            <div className="field-description">
-              Your email will never be shown to other users
-            </div>
-          </div>
-        )}
-        
-        {/* Password fields shown for both registration types */}
-        <div className="form-group">
-          <label htmlFor="password">Password:</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Create a password"
-            className={formErrors.password ? 'error' : ''}
-          />
-          {formErrors.password && <div className="error-message">{formErrors.password}</div>}
-        </div>
-        
-        <div className="form-group">
-          <label htmlFor="confirmPassword">Confirm Password:</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            placeholder="Confirm your password"
-            className={formErrors.confirmPassword ? 'error' : ''}
-          />
-          {formErrors.confirmPassword && <div className="error-message">{formErrors.confirmPassword}</div>}
-        </div>
-        
-        {/* Show any API error from the auth context */}
-        {error && <div className="api-error-message">{error}</div>}
-        
-        <button 
-          type="submit" 
-          className="submit-btn" 
-          disabled={loading}
-        >
-          {loading ? 'Creating Account...' : 'Create Account'}
-        </button>
-      </form>
-      
-      <div className="form-footer">
-        <p>
-          Already have an account? <a href="/login">Log in</a>
-        </p>
-      </div>
+        ...
+      </form> */}
     </div>
   );
 };

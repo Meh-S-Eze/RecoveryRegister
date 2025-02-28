@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -93,6 +93,11 @@ const LoginForm = () => {
     }
   };
   
+  useEffect(() => {
+    // Clear any existing registration data
+    localStorage.removeItem('registrationInProgress');
+  }, []);
+  
   return (
     <div className="auth-form-container">
       <h2>Log In</h2>
@@ -156,9 +161,6 @@ const LoginForm = () => {
       </form>
       
       <div className="form-footer">
-        <p>
-          Don't have an account? <a href="/register">Register</a>
-        </p>
         <p className="forgot-password">
           <a href="/forgot-password">Forgot password?</a>
         </p>

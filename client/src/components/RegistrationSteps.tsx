@@ -218,11 +218,13 @@ export function RegistrationSteps() {
     }
   };
   
-  // Show confirmation message if registration is complete
-  if (isSubmitted) {
+  // Show confirmation message if registration is complete or if registration data exists
+  if (isSubmitted || (personalInfoCompleted && registrationData)) {
     return <ConfirmationMessage />;
   }
   
+  /* 
+  // Account creation step is commented out as per requirement to disable account creation
   // Show account creation step if registration has been submitted but account creation not yet handled
   if (personalInfoCompleted && registrationData) {
     return (
@@ -252,6 +254,7 @@ export function RegistrationSteps() {
       </Card>
     );
   }
+  */
   
   return (
     <Card className="bg-white rounded-lg shadow-md overflow-hidden max-w-2xl mx-auto">
