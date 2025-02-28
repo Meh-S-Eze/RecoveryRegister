@@ -16,6 +16,8 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { PostgresStorage } from "./pgStorage";
 import bcrypt from "bcryptjs";
+// Import session types
+import "./types";
 
 // Create a PostgreSQL storage instance
 export const storage = new PostgresStorage();

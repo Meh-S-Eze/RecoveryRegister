@@ -160,6 +160,21 @@ export default function Admin() {
     setCheckCount(prev => prev + 1);
   };
   
+  // Query for registrations - only run if authenticated
+  const { data: registrations, isLoading: registrationsLoading, error: registrationsError, refetch: refetchRegistrations } = useQuery<Registration[]>({
+    queryKey: ['/api/registrations'],
+    refetchOnMount: true,
+    staleTime: 10000, // 10 seconds
+    enabled: isAuthenticated, // Only run query if authenticated
+  });
+  
+  // Query for study sessions - public endpoint so doesn't need auth check
+  const { data: studySessions, isLoading: sessionsLoading, error: sessionsError, refetch: refetchSessions } = useQuery<StudySession[]>({
+    queryKey: ['/api/study-sessions'],
+    refetchOnMount: true,
+    staleTime: 10000, // 10 seconds
+  });
+
   useEffect(() => {
     const checkAuth = async () => {
       setAuthLoading(true);
@@ -188,9 +203,7 @@ export default function Admin() {
             console.log("User is authenticated as admin");
             setIsAuthenticated(true);
             
-            // Immediately fetch admin data
-            refetchRegistrations();
-            refetchSessions();
+            // The queries will auto-run when isAuthenticated changes
           } else {
             console.log("User is not an admin");
             setIsAuthenticated(false);
@@ -213,7 +226,7 @@ export default function Admin() {
     };
     
     checkAuth();
-  }, [toast, checkCount, refetchRegistrations, refetchSessions]);
+  }, [toast, checkCount]);
   
   const handleLogout = async () => {
     try {
@@ -227,21 +240,6 @@ export default function Admin() {
       console.error("Logout error:", error);
     }
   };
-  
-  // Query for registrations - only run if authenticated
-  const { data: registrations, isLoading: registrationsLoading, error: registrationsError, refetch: refetchRegistrations } = useQuery<Registration[]>({
-    queryKey: ['/api/registrations'],
-    refetchOnMount: true,
-    staleTime: 10000, // 10 seconds
-    enabled: isAuthenticated, // Only run query if authenticated
-  });
-  
-  // Query for study sessions - public endpoint so doesn't need auth check
-  const { data: studySessions, isLoading: sessionsLoading, error: sessionsError, refetch: refetchSessions } = useQuery<StudySession[]>({
-    queryKey: ['/api/study-sessions'],
-    refetchOnMount: true,
-    staleTime: 10000, // 10 seconds
-  });
   
   // Study session form
   const sessionForm = useForm<StudySessionFormValues>({
