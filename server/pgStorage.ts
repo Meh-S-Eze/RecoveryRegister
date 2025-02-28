@@ -5,7 +5,8 @@ import {
   User, InsertUser, 
   Registration, InsertRegistration,
   StudySession, InsertStudySession,
-  UserProfile, InsertUserProfile, UpdateUserProfile
+  UserProfile, InsertUserProfile, UpdateUserProfile,
+  AdminRequest, InsertAdminRequest
 } from '@shared/schema';
 
 export class PostgresStorage implements IStorage {

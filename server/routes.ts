@@ -8,7 +8,9 @@ import {
   userRegisterSchema,
   updateUserProfileSchema,
   updatePasswordSchema,
-  updateEmailSchema
+  updateEmailSchema,
+  adminRequestSchema,
+  updateAdminRequestSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -692,6 +694,197 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error preparing account creation data:", error);
       return res.status(500).json({ message: "Error preparing account creation data" });
+    }
+  });
+
+  // Admin request routes
+  // Create admin request
+  app.post("/api/admin-requests", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Validate admin request data
+      const { requestReason } = adminRequestSchema.parse(req.body);
+      
+      // Check if user already has an admin request
+      const existingRequests = await storage.getAdminRequestsByUser(userId);
+      if (existingRequests.length > 0) {
+        return res.status(400).json({ message: "You already have a pending admin request" });
+      }
+      
+      // Create admin request
+      const adminRequest = await storage.createAdminRequest({
+        userId,
+        requestReason,
+        status: "pending"
+      });
+      
+      // Update user role to pending_admin
+      const user = await storage.getUser(userId);
+      if (user) {
+        // Need to implement updateUserRole method
+        const updatedUser = await storage.createUser({
+          ...user,
+          role: "pending_admin"
+        });
+        // Update session
+        // @ts-ignore - session is added by express-session
+        req.session.userRole = "pending_admin";
+      }
+      
+      return res.status(201).json(adminRequest);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Error creating admin request:", error);
+      return res.status(500).json({ message: "Error creating admin request" });
+    }
+  });
+  
+  // Get all admin requests (super_admin only)
+  app.get("/api/admin-requests", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Get user to check if super_admin
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "super_admin") {
+        return res.status(403).json({ message: "Not authorized to view admin requests" });
+      }
+      
+      // Get all admin requests
+      const adminRequests = await storage.getAdminRequests();
+      
+      // Include user information with each request
+      const adminRequestsWithUsers = await Promise.all(
+        adminRequests.map(async (request) => {
+          const requestUser = await storage.getUser(request.userId);
+          return {
+            ...request,
+            user: requestUser ? {
+              id: requestUser.id,
+              username: requestUser.username,
+              email: requestUser.email,
+              phone: requestUser.phone
+            } : null
+          };
+        })
+      );
+      
+      return res.json(adminRequestsWithUsers);
+    } catch (error) {
+      console.error("Error fetching admin requests:", error);
+      return res.status(500).json({ message: "Error fetching admin requests" });
+    }
+  });
+  
+  // Get a specific admin request
+  app.get("/api/admin-requests/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Get user to check if super_admin or the requester
+      const user = await storage.getUser(userId);
+      const adminRequest = await storage.getAdminRequest(id);
+      
+      if (!adminRequest) {
+        return res.status(404).json({ message: "Admin request not found" });
+      }
+      
+      // Only allow super_admin or the requester to view
+      if (!user || (user.role !== "super_admin" && adminRequest.userId !== userId)) {
+        return res.status(403).json({ message: "Not authorized to view this admin request" });
+      }
+      
+      // Include user information with request
+      const requestUser = await storage.getUser(adminRequest.userId);
+      const response = {
+        ...adminRequest,
+        user: requestUser ? {
+          id: requestUser.id,
+          username: requestUser.username,
+          email: requestUser.email,
+          phone: requestUser.phone
+        } : null
+      };
+      
+      return res.json(response);
+    } catch (error) {
+      console.error("Error fetching admin request:", error);
+      return res.status(500).json({ message: "Error fetching admin request" });
+    }
+  });
+  
+  // Update an admin request (super_admin only)
+  app.put("/api/admin-requests/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // @ts-ignore - session is added by express-session
+      const userId = req.session.userId;
+      
+      // Get user to check if super_admin
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "super_admin") {
+        return res.status(403).json({ message: "Not authorized to update admin requests" });
+      }
+      
+      // Validate update data
+      const updateData = updateAdminRequestSchema.parse(req.body);
+      
+      // Update admin request
+      const adminRequest = await storage.updateAdminRequest(
+        id, 
+        updateData.status, 
+        userId, 
+        updateData.reviewNotes
+      );
+      
+      if (!adminRequest) {
+        return res.status(404).json({ message: "Admin request not found" });
+      }
+      
+      // If approved, update user role to admin
+      if (updateData.status === "approved") {
+        const requestUser = await storage.getUser(adminRequest.userId);
+        if (requestUser) {
+          // Need to implement updateUserRole method
+          await storage.createUser({
+            ...requestUser,
+            role: "admin"
+          });
+        }
+      }
+      
+      return res.json(adminRequest);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Error updating admin request:", error);
+      return res.status(500).json({ message: "Error updating admin request" });
     }
   });
 
