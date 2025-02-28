@@ -115,7 +115,12 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               className="w-full" 
               disabled={login.isPending}
             >
-              {login.isPending ? "Logging in..." : "Login"}
+              {login.isPending ? (
+                <span className="flex items-center justify-center">
+                  <span className="animate-spin h-4 w-4 mr-2 border-2 border-b-transparent rounded-full"></span>
+                  Logging in...
+                </span>
+              ) : "Login"}
             </Button>
             
             <div className="text-center text-sm text-gray-500 mt-4">

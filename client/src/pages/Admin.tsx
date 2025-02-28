@@ -150,10 +150,12 @@ export default function Admin() {
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<StudySession | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   
   // Check authentication status on component mount
   useEffect(() => {
     const checkAuth = async () => {
+      setAuthLoading(true);
       try {
         const response = await fetch('/api/auth/me', {
           credentials: 'include'
@@ -178,6 +180,8 @@ export default function Admin() {
       } catch (error) {
         console.error("Auth check error:", error);
         setIsAuthenticated(false);
+      } finally {
+        setAuthLoading(false);
       }
     };
     
@@ -197,14 +201,15 @@ export default function Admin() {
     }
   };
   
-  // Query for registrations
+  // Query for registrations - only run if authenticated
   const { data: registrations, isLoading: registrationsLoading, error: registrationsError, refetch: refetchRegistrations } = useQuery<Registration[]>({
     queryKey: ['/api/registrations'],
     refetchOnMount: true,
     staleTime: 10000, // 10 seconds
+    enabled: isAuthenticated, // Only run query if authenticated
   });
   
-  // Query for study sessions
+  // Query for study sessions - public endpoint so doesn't need auth check
   const { data: studySessions, isLoading: sessionsLoading, error: sessionsError, refetch: refetchSessions } = useQuery<StudySession[]>({
     queryKey: ['/api/study-sessions'],
     refetchOnMount: true,
@@ -444,6 +449,21 @@ export default function Admin() {
     );
   }
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <Helmet>
+          <title>Loading Admin | Celebrate Recovery</title>
+        </Helmet>
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+          <p className="text-lg text-gray-600">Checking authentication status...</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Show login form if not authenticated
   if (!isAuthenticated) {
     return (
