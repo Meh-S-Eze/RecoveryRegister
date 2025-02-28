@@ -25,12 +25,13 @@ app.use(
       createTableIfMissing: true
     }),
     secret: process.env.SESSION_SECRET || 'recovery-register-default-key',
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Set to true to ensure the session is saved on each request
+    saveUninitialized: true, // Set to true to create session for all requests
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false in development to work without HTTPS
+      sameSite: 'lax' // This helps with cross-site request issues
     }
   })
 );

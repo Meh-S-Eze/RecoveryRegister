@@ -281,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  app.get("/api/auth/me", async (req: Request, res: Response) => {
+  app.get("/api/auth/me", isAuthenticated, async (req: Request, res: Response) => {
     try {
       console.log("Checking user session in /api/auth/me");
       
