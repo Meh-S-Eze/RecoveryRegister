@@ -165,9 +165,16 @@ export default function Admin() {
       setAuthLoading(true);
       try {
         console.log("Checking authentication status...");
+        
+        // Get all cookies to debug
+        console.log("Current cookies:", document.cookie);
+        
+        // Make auth check request with explicit credentials inclusion
         const response = await fetch('/api/auth/me', {
+          method: 'GET',
           credentials: 'include',
           headers: {
+            'Accept': 'application/json',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache'
           }
@@ -180,6 +187,10 @@ export default function Admin() {
           if (userData && (userData.role === 'admin' || userData.role === 'super_admin')) {
             console.log("User is authenticated as admin");
             setIsAuthenticated(true);
+            
+            // Immediately fetch admin data
+            refetchRegistrations();
+            refetchSessions();
           } else {
             console.log("User is not an admin");
             setIsAuthenticated(false);
@@ -202,7 +213,7 @@ export default function Admin() {
     };
     
     checkAuth();
-  }, [toast, checkCount]);
+  }, [toast, checkCount, refetchRegistrations, refetchSessions]);
   
   const handleLogout = async () => {
     try {

@@ -35,12 +35,14 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
   });
 
   const login = useMutation({
-    mutationFn: (credentials: LoginFormValues) => {
+    mutationFn: async (credentials: LoginFormValues) => {
       // Convert from username/password to identifier/password
-      return apiRequest("POST", "/api/auth/login", {
+      const response = await apiRequest("POST", "/api/auth/login", {
         identifier: credentials.username,
         password: credentials.password
       });
+      // Return the response data
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log("Login successful, user data:", data);
@@ -52,7 +54,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       // Small delay to ensure session is properly set before checking auth status
       setTimeout(() => {
         onLoginSuccess();
-      }, 500);
+      }, 1000); // Increased to 1000ms to ensure cookies are set
     },
     onError: (error: any) => {
       setAuthError("Invalid username or password. Please try again.");
