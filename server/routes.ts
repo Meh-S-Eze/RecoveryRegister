@@ -963,6 +963,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Issue reporting endpoints
+  app.post("/api/issue-reports", async (req: Request, res: Response) => {
+    try {
+      console.log("Issue report request:", JSON.stringify(req.body, null, 2));
+      
+      const data = issueReportSchema.parse(req.body);
+      
+      const issueReport = await storage.createIssueReport({
+        description: data.description,
+        contactInfo: data.contactInfo,
+        status: "pending"
+      });
+      
+      return res.status(201).json(issueReport);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: validationError.details 
+        });
+      }
+      
+      console.error("Error creating issue report:", error);
+      return res.status(500).json({ message: "Error creating issue report" });
+    }
+  });
+  
+  app.get("/api/issue-reports", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const issueReports = await storage.getIssueReports();
+      return res.json(issueReports);
+    } catch (error) {
+      console.error("Error fetching issue reports:", error);
+      return res.status(500).json({ message: "Error fetching issue reports" });
+    }
+  });
+  
+  app.get("/api/issue-reports/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const issueReport = await storage.getIssueReport(id);
+      if (!issueReport) {
+        return res.status(404).json({ message: "Issue report not found" });
+      }
+      
+      return res.json(issueReport);
+    } catch (error) {
+      console.error("Error fetching issue report:", error);
+      return res.status(500).json({ message: "Error fetching issue report" });
+    }
+  });
+  
+  app.put("/api/issue-reports/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      // @ts-ignore - session is added by express-session
+      const adminId = req.session.userId;
+      if (!adminId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { status, resolution } = req.body;
+      
+      // Validate status
+      if (!["pending", "in-progress", "resolved"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+      
+      const updatedReport = await storage.updateIssueReport(
+        id,
+        status,
+        adminId,
+        resolution
+      );
+      
+      if (!updatedReport) {
+        return res.status(404).json({ message: "Issue report not found" });
+      }
+      
+      return res.json(updatedReport);
+    } catch (error) {
+      console.error("Error updating issue report:", error);
+      return res.status(500).json({ message: "Error updating issue report" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

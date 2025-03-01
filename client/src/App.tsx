@@ -8,6 +8,7 @@ import RegistrationForm from "@/pages/RegistrationForm";
 import Admin from "@/pages/Admin";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { HelpButton } from "@/components/HelpButton";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
+        <HelpButton />
         <main className="flex-1">
           <Router />
         </main>
