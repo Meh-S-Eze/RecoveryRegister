@@ -910,8 +910,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid ID format" });
       }
       
-      // @ts-ignore - session is added by express-session
-      const userId = req.session.userId;
+      // Get userId from session using our helper
+      let userId;
+      try {
+        userId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Get user to check if super_admin or the requester
       const user = await storage.getUser(userId);
@@ -953,8 +958,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid ID format" });
       }
       
-      // @ts-ignore - session is added by express-session
-      const userId = req.session.userId;
+      // Get userId from session using our helper
+      let userId;
+      try {
+        userId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Get user to check if super_admin
       const user = await storage.getUser(userId);
@@ -1065,10 +1075,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid ID format" });
       }
       
-      // @ts-ignore - session is added by express-session
-      const adminId = req.session.userId;
-      if (!adminId) {
-        return res.status(401).json({ message: "Not authenticated" });
+      // Get userId from session using our helper
+      let adminId;
+      try {
+        adminId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
       
       const { status, resolution } = req.body;
