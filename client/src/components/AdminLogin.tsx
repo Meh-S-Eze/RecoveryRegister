@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertCircle } from "lucide-react";
+
+// Client-side logger for debugging purposes
+const clientLogger = {
+  info: (message: string, data?: any) => {
+    console.log(`[ADMIN LOGIN] ${new Date().toISOString()} - ${message}`, data);
+  },
+  error: (message: string, data?: any) => {
+    console.error(`[ADMIN LOGIN ERROR] ${new Date().toISOString()} - ${message}`, data);
+  }
+};
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -25,6 +35,17 @@ interface AdminLoginProps {
 export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
   const { toast } = useToast();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showDevLogin, setShowDevLogin] = useState(false);
+
+  // Check if we're in development mode for showing the dev login button
+  useEffect(() => {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    setShowDevLogin(isDevelopment);
+    clientLogger.info("Admin login component mounted in environment", { isDevelopment });
+    
+    // Clear any stale session data on mount
+    localStorage.removeItem('recoveryRegister_debug_sessionId');
+  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -36,6 +57,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
   const login = useMutation({
     mutationFn: async (credentials: LoginFormValues) => {
+      clientLogger.info("Attempting login with credentials", { username: credentials.username });
       // Convert from username/password to identifier/password
       const response = await apiRequest("POST", "/api/auth/login", {
         identifier: credentials.username,
@@ -45,7 +67,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       return await response.json();
     },
     onSuccess: (data) => {
-      console.log("Login successful, user data:", data);
+      clientLogger.info("Login successful, user data:", data);
       toast({
         title: "Login successful",
         description: "You are now logged in as an administrator.",
@@ -57,6 +79,7 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       }, 1000); // Increased to 1000ms to ensure cookies are set
     },
     onError: (error: any) => {
+      clientLogger.error("Login error", { error });
       setAuthError("Invalid username or password. Please try again.");
       toast({
         title: "Login failed",
@@ -65,6 +88,50 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       });
     },
   });
+
+  const handleDevLogin = async () => {
+    try {
+      clientLogger.info("Attempting dev bypass login");
+      const response = await fetch('/api/auth/dev-admin-login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        clientLogger.info("Dev login response", data);
+        
+        // If a sessionId was included in the response, save it for debugging
+        if (data && data.sessionId) {
+          clientLogger.info("Dev login successful, session ID:", data.sessionId);
+          localStorage.setItem('recoveryRegister_debug_sessionId', data.sessionId);
+        }
+        
+        toast({
+          title: "Developer Login",
+          description: "You are now logged in as an administrator.",
+        });
+        
+        // Use a longer delay to ensure the session is properly established
+        setTimeout(onLoginSuccess, 1000);
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Dev login failed: ${errorText}`);
+      }
+    } catch (error) {
+      clientLogger.error("Dev login error", { error });
+      toast({
+        title: "Dev Bypass Failed",
+        description: "Could not complete developer login",
+        variant: "destructive"
+      });
+    }
+  };
 
   const onSubmit = (values: LoginFormValues) => {
     setAuthError(null);
@@ -94,7 +161,22 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Username</FormLabel>
+                    <div className="group relative">
+                      <AlertCircle className="h-4 w-4 text-slate-400" />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="absolute -top-1 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 h-6 w-6"
+                        onClick={() => form.setValue('username', 'test')}
+                      >
+                        <span className="sr-only">Auto-fill test user</span>
+                        <span className="text-xs">Use test</span>
+                      </Button>
+                    </div>
+                  </div>
                   <FormControl>
                     <Input placeholder="Enter your username" {...field} />
                   </FormControl>
@@ -108,7 +190,22 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Password</FormLabel>
+                    <div className="group relative">
+                      <AlertCircle className="h-4 w-4 text-slate-400" />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="absolute -top-1 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 h-6 w-6"
+                        onClick={() => form.setValue('password', 'testtest1')}
+                      >
+                        <span className="sr-only">Auto-fill test password</span>
+                        <span className="text-xs">Use test</span>
+                      </Button>
+                    </div>
+                  </div>
                   <FormControl>
                     <Input type="password" placeholder="Enter your password" {...field} />
                   </FormControl>
@@ -129,6 +226,22 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
                 </span>
               ) : "Login"}
             </Button>
+            
+            {showDevLogin && (
+              <div className="mt-6 border-t pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full text-yellow-600 border-yellow-300 hover:bg-yellow-50"
+                  onClick={handleDevLogin}
+                  type="button"
+                >
+                  🚀 Development Bypass
+                </Button>
+                <p className="text-xs text-yellow-600 mt-2 text-center">
+                  Warning: Development-only access. Disable in production!
+                </p>
+              </div>
+            )}
             
             <div className="text-center text-sm text-gray-500 mt-4">
               <p>Need admin access? Contact a super administrator to request access.</p>

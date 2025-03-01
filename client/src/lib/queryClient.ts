@@ -29,12 +29,36 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Create headers with enhanced caching control
+    const headers: Record<string, string> = {
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache"
+    };
+    
+    // Add debug session ID if available for auth endpoints
+    const url = queryKey[0] as string;
+    const debugSessionId = localStorage.getItem('recoveryRegister_debug_sessionId');
+    if (debugSessionId && url.startsWith('/api/auth')) {
+      console.log("Using debug session ID in query:", url, debugSessionId);
+      headers['X-Debug-Session-ID'] = debugSessionId;
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
+      headers
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;
+    }
+
+    // If this is an auth endpoint and we get a session ID header, save it
+    if (url.startsWith('/api/auth') && res.headers.get('X-Session-ID')) {
+      const sessionId = res.headers.get('X-Session-ID');
+      if (sessionId) {
+        localStorage.setItem('recoveryRegister_debug_sessionId', sessionId);
+        console.log("Saved session ID from query response:", sessionId);
+      }
     }
 
     await throwIfResNotOk(res);
