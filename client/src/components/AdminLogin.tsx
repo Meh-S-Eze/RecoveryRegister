@@ -11,8 +11,22 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertCircle } from "lucide-react";
 
+const clientLogger = {
+  error: (message: string, context?: object) => {
+    console.error(`[ADMIN LOGIN ERROR] ${new Date().toISOString()} - ${message}`, context);
+  },
+  info: (message: string, meta?: object) => {
+    console.log(`[ADMIN LOGIN] ${new Date().toISOString()} - ${message}`, meta);
+  }
+};
+
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  username: z.string()
+    .min(1, "Username is required")
+    .regex(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$|^[a-zA-Z0-9_-]{3,20}$/,
+      "Use email (user@example.com) or 3-20 character pseudonym (letters, numbers, _-)"
+    ),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -36,15 +50,25 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
   const login = useMutation({
     mutationFn: async (credentials: LoginFormValues) => {
-      // Convert from username/password to identifier/password
+      clientLogger.info('Admin login attempt', { username: credentials.username });
       const response = await apiRequest("POST", "/api/auth/login", {
         identifier: credentials.username,
         password: credentials.password
       });
-      // Return the response data
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        clientLogger.error('Admin login failed', { 
+          status: response.status,
+          error: errorData.message 
+        });
+        throw new Error(errorData.message || "Admin login failed");
+      }
+      
       return await response.json();
     },
     onSuccess: (data) => {
+      clientLogger.info('Admin login successful', { user: data.user });
       console.log("Login successful, user data:", data);
       toast({
         title: "Login successful",
@@ -57,10 +81,25 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
       }, 1000); // Increased to 1000ms to ensure cookies are set
     },
     onError: (error: any) => {
-      setAuthError("Invalid username or password. Please try again.");
+      let errorMessage = "Invalid credentials. Please try again.";
+      
+      // Handle specific error patterns
+      if (error.message.includes("Invalid format")) {
+        errorMessage = "Invalid login format. Use email (user@example.com) or 3-20 character pseudonym";
+      } else if (error.message.includes("pattern")) {
+        errorMessage = "Login format requirements:\n• Email: user@example.com\n• Pseudonym: 3-20 characters (letters, numbers, _-)";
+      }
+
+      clientLogger.error('Admin login error', {
+        error: error.message,
+        stack: error.stack,
+        userInput: form.getValues() // Log actual user input
+      });
+      
+      setAuthError(errorMessage);
       toast({
-        title: "Login failed",
-        description: error.message || "There was an error logging in. Please try again.",
+        title: "Login Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -69,6 +108,29 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
   const onSubmit = (values: LoginFormValues) => {
     setAuthError(null);
     login.mutate(values);
+  };
+
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  const handleDevLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/dev-admin-login', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        setTimeout(onLoginSuccess, 500);
+      } else {
+        throw new Error('Dev login failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Dev Bypass Failed",
+        description: "Ensure you're in development mode",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -94,7 +156,22 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Username</FormLabel>
+                    <div className="group relative">
+                      <AlertCircle className="h-4 w-4 text-slate-400" />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="absolute -top-1 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 h-6 w-6"
+                        onClick={() => form.setValue('username', 'test')}
+                      >
+                        <span className="sr-only">Auto-fill test user</span>
+                        <span className="text-xs">Use test</span>
+                      </Button>
+                    </div>
+                  </div>
                   <FormControl>
                     <Input placeholder="Enter your username" {...field} />
                   </FormControl>
@@ -108,7 +185,22 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Password</FormLabel>
+                    <div className="group relative">
+                      <AlertCircle className="h-4 w-4 text-slate-400" />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="sm" 
+                        className="absolute -top-1 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 h-6 w-6"
+                        onClick={() => form.setValue('password', 'testtest1')}
+                      >
+                        <span className="sr-only">Auto-fill test password</span>
+                        <span className="text-xs">Use test</span>
+                      </Button>
+                    </div>
+                  </div>
                   <FormControl>
                     <Input type="password" placeholder="Enter your password" {...field} />
                   </FormControl>
@@ -129,6 +221,22 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
                 </span>
               ) : "Login"}
             </Button>
+            
+            {isDevelopment && (
+              <div className="mt-6 border-t pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full text-yellow-600 border-yellow-300 hover:bg-yellow-50"
+                  onClick={handleDevLogin}
+                  type="button"
+                >
+                  🚀 Development Bypass
+                </Button>
+                <p className="text-xs text-yellow-600 mt-2 text-center">
+                  Warning: Development-only access. Disable in production!
+                </p>
+              </div>
+            )}
             
             <div className="text-center text-sm text-gray-500 mt-4">
               <p>Need admin access? Contact a super administrator to request access.</p>

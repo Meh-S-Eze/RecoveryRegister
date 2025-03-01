@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 /**
  * Registration Form Component
@@ -17,6 +18,7 @@ const RegisterForm = () => {
   
   const [formErrors, setFormErrors] = useState({});
   const [registrationType, setRegistrationType] = useState('pseudonym'); // 'pseudonym' or 'email'
+  const [identityType, setIdentityType] = useState('pseudonym'); // 'pseudonym' or 'email'
   
   // Get auth context
   const { register, loading, error } = useAuth();
@@ -121,10 +123,36 @@ const RegisterForm = () => {
         Please contact your Celebrate Recovery Leader to request access. 
         Admin-approved accounts only at this time.
       </p>
-      {/* Commented out registration form
       <form onSubmit={handleSubmit}>
-        ...
-      </form> */}
+        <FormControl fullWidth>
+          <InputLabel>Identity Type</InputLabel>
+          <Select
+            value={identityType}
+            onChange={(e) => setIdentityType(e.target.value)}
+          >
+            <MenuItem value="pseudonym">Pseudonym (Anonymous)</MenuItem>
+            <MenuItem value="email">Email (Non-anonymous)</MenuItem>
+          </Select>
+        </FormControl>
+
+        {identityType === 'pseudonym' && (
+          <TextField
+            label="Pseudonym"
+            name="pseudonym"
+            helperText="Minimum 2 characters"
+            required
+          />
+        )}
+
+        {identityType === 'email' && (
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            required
+          />
+        )}
+      </form>
     </div>
   );
 };

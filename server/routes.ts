@@ -89,6 +89,51 @@ const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
+  // Development admin bypass login
+  app.post("/api/auth/dev-admin-login", async (req: Request, res: Response) => {
+    try {
+      console.log("Development admin login bypass activated");
+      
+      // Get the test admin user
+      const adminUser = await storage.getUserByUsername("test");
+      
+      if (!adminUser) {
+        console.log("Could not find test admin user");
+        return res.status(500).json({ message: "Test admin user not found" });
+      }
+      
+      // Set session data
+      req.session.userId = adminUser.id;
+      req.session.userRole = adminUser.role;
+      
+      // Save session explicitly to ensure it's stored before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Error saving dev admin session:", err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        
+        console.log("Dev admin session saved successfully for:", adminUser.username);
+        console.log("Session data:", {
+          userId: req.session.userId,
+          userRole: req.session.userRole
+        });
+        
+        return res.status(200).json({
+          id: adminUser.id,
+          username: adminUser.username,
+          email: adminUser.email,
+          role: adminUser.role,
+          isAnonymous: adminUser.isAnonymous,
+          preferredContact: adminUser.preferredContact
+        });
+      });
+    } catch (error) {
+      console.error("Dev admin login error:", error);
+      return res.status(500).json({ message: "Error during dev admin login" });
+    }
+  });
+
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       console.log("Login attempt with:", JSON.stringify(req.body, null, 2));
