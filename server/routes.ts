@@ -102,9 +102,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Test admin user not found" });
       }
       
+      // Reset the session completely - clear any existing data
+      await new Promise<void>((resolve) => {
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error("Error regenerating session:", err);
+          }
+          resolve();
+        });
+      });
+      
       // Set session data
       req.session.userId = adminUser.id;
       req.session.userRole = adminUser.role;
+      
+      // Ensure cookie is set with the proper settings
+      if (req.session.cookie) {
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+        req.session.cookie.httpOnly = true;
+        req.session.cookie.secure = process.env.NODE_ENV === 'production';
+        req.session.cookie.sameSite = 'lax';
+      }
       
       console.log("Session before save:", {
         sessionID: req.sessionID,
@@ -114,34 +132,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Save session explicitly to ensure it's stored before sending response
-      req.session.save((err) => {
-        if (err) {
-          console.error("Error saving dev admin session:", err);
-          return res.status(500).json({ message: "Session error" });
-        }
-        
-        console.log("Dev admin session saved successfully for:", adminUser.username);
-        console.log("Session data:", {
-          sessionID: req.sessionID,
-          userId: req.session.userId,
-          userRole: req.session.userRole
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error("Error saving dev admin session:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
         });
-        
-        // Send a cross-site-compatible cookie response
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        
-        // Set custom header to help debug session issues
-        res.setHeader('X-Session-ID', req.sessionID);
-        
-        return res.status(200).json({
-          id: adminUser.id,
-          username: adminUser.username,
-          email: adminUser.email,
-          role: adminUser.role,
-          isAnonymous: adminUser.isAnonymous,
-          preferredContact: adminUser.preferredContact,
-          sessionId: req.sessionID // Include the session ID in the response for debugging
-        });
+      });
+      
+      console.log("Dev admin session saved successfully for:", adminUser.username);
+      console.log("Session data:", {
+        sessionID: req.sessionID,
+        userId: req.session.userId,
+        userRole: req.session.userRole
+      });
+      
+      // Set special headers to ensure proper client/server sync
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.setHeader('X-Session-ID', req.sessionID);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      return res.status(200).json({
+        id: adminUser.id,
+        username: adminUser.username,
+        email: adminUser.email,
+        role: adminUser.role,
+        isAnonymous: adminUser.isAnonymous,
+        preferredContact: adminUser.preferredContact,
+        sessionId: req.sessionID // Include the session ID in the response for debugging
       });
     } catch (error) {
       console.error("Dev admin login error:", error);
@@ -347,9 +371,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Checking user session in /api/auth/me");
       
+      // Check for debug session ID in header for client-side debugging
+      const debugSessionId = req.headers['x-debug-session-id'];
+      if (debugSessionId) {
+        console.log("Received debug session ID in header:", debugSessionId);
+      }
+      
       // @ts-ignore - session is added by express-session
       if (!req.session || !req.session.userId) {
         console.log("No valid session found in /api/auth/me");
+        // Log more details about the session for debugging
+        console.log("Session info:", {
+          sessionID: req.sessionID,
+          // @ts-ignore - session is added by express-session
+          cookie: req.session ? req.session.cookie : null,
+          rawHeaders: req.rawHeaders,
+        });
+        
         return res.status(401).json({ error: "Not authenticated" });
       }
       
@@ -385,6 +423,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Error fetching user profile" });
     }
   });
+  // Add CORS preflight handling for the authentication endpoints
+  app.options("/api/auth/*", (req, res) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Debug-Session-ID');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.status(204).end();
+  });
+  
   // API routes for registrations (admin only)
   app.get("/api/registrations", isAdmin, async (req: Request, res: Response) => {
     try {

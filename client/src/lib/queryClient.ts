@@ -12,12 +12,39 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Create headers object with enhanced cache control
+  const headers: Record<string, string> = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache"
+  };
+  
+  // Add Content-Type header for requests with data
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add debug session ID if available
+  const debugSessionId = localStorage.getItem('recoveryRegister_debug_sessionId');
+  if (debugSessionId && url.startsWith('/api/auth')) {
+    console.log("Using debug session ID in API request:", url, debugSessionId);
+    headers['X-Debug-Session-ID'] = debugSessionId;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+  
+  // If this is an auth endpoint and we get a session ID header, save it
+  if (url.startsWith('/api/auth') && res.headers.get('X-Session-ID')) {
+    const sessionId = res.headers.get('X-Session-ID');
+    if (sessionId) {
+      localStorage.setItem('recoveryRegister_debug_sessionId', sessionId);
+      console.log("Saved session ID from API response:", sessionId);
+    }
+  }
 
   await throwIfResNotOk(res);
   return res;
