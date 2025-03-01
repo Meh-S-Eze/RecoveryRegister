@@ -227,6 +227,29 @@ export default function Admin() {
         } else {
           console.log("Auth check failed with status:", response.status);
           setIsAuthenticated(false);
+          
+          // If we're working in dev mode, attempt the dev admin login once if there's
+          // no session, but no error is shown to the user (used for dev convenience)
+          if (process.env.NODE_ENV === 'development' && checkCount === 0) {
+            try {
+              adminLogger.info("Attempting automatic dev login on first load");
+              const devResponse = await fetch('/api/auth/dev-admin-login', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+              });
+              
+              if (devResponse.ok) {
+                // Recheck auth after a short delay
+                setTimeout(() => {
+                  recheckAuth();
+                }, 1000);
+              }
+            } catch (devError) {
+              // Just log the error, don't bother the user
+              console.error("Auto dev login failed:", devError);
+            }
+          }
         }
       } catch (error) {
         console.error("Auth check error:", error);
@@ -556,7 +579,7 @@ export default function Admin() {
                   onClick={handleDevAdminLogin}
                   className="flex items-center gap-2"
                 >
-                  <LogOutIcon className="h-4 w-4" />
+                  <KeyIcon className="h-4 w-4" />
                   <span>Dev Login</span>
                 </Button>
               )}
