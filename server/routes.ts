@@ -10,7 +10,8 @@ import {
   updatePasswordSchema,
   updateEmailSchema,
   adminRequestSchema,
-  updateAdminRequestSchema
+  updateAdminRequestSchema,
+  issueReportSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
