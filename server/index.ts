@@ -28,6 +28,7 @@ app.use(
     resave: true, // Set to true to ensure the session is saved on each request
     saveUninitialized: true, // Set to true to create session for all requests
     name: 'recoveryRegister.sid', // Custom name to avoid conflicts
+    rolling: true, // Reset the cookie expiration on each response
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
