@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, date, time } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date, time, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -191,6 +191,41 @@ export type InsertRegistration = z.infer<typeof insertRegistrationSchema>;
 export type Registration = typeof registrations.$inferSelect;
 
 // Extended schema with validation
+// Issue Reports table for tracking user-reported issues
+export const issueReports = pgTable("issue_reports", {
+  id: serial("id").primaryKey(),
+  description: text("description").notNull(),
+  contactInfo: text("contact_info"),
+  status: text("status").notNull().default("pending"), // "pending", "in-progress", "resolved"
+  assignedTo: integer("assigned_to").references(() => users.id),
+  resolution: text("resolution"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertIssueReportSchema = createInsertSchema(issueReports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  assignedTo: true,
+  resolution: true,
+});
+
+export const issueReportSchema = z.object({
+  description: z.string().min(1, "Please describe the issue you're experiencing"),
+  contactInfo: z.string().optional(),
+  status: z.enum(["pending", "in-progress", "resolved"]).default("pending"),
+});
+
+export const updateIssueReportSchema = z.object({
+  status: z.enum(["pending", "in-progress", "resolved"]),
+  assignedTo: z.number().int().positive().optional(),
+  resolution: z.string().optional(),
+});
+
+export type InsertIssueReport = z.infer<typeof insertIssueReportSchema>;
+export type IssueReport = typeof issueReports.$inferSelect;
+
 export const registrationFormSchema = insertRegistrationSchema.extend({
   privacyConsent: z.boolean().refine(val => val === true, {
     message: "You must acknowledge the privacy notice to continue."

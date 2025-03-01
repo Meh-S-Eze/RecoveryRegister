@@ -54,6 +54,12 @@ export interface IStorage {
   createStudySession(session: InsertStudySession): Promise<StudySession>;
   updateStudySession(id: number, sessionUpdate: Partial<InsertStudySession>): Promise<StudySession | undefined>;
   deleteStudySession(id: number): Promise<boolean>;
+  
+  // Issue Report methods
+  getIssueReports(): Promise<IssueReport[]>;
+  getIssueReport(id: number): Promise<IssueReport | undefined>;
+  createIssueReport(report: InsertIssueReport): Promise<IssueReport>;
+  updateIssueReport(id: number, status: string, assignedTo?: number, resolution?: string): Promise<IssueReport | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -62,10 +68,12 @@ export class MemStorage implements IStorage {
   private studySessions: Map<number, StudySession>;
   private userProfiles: Map<number, UserProfile>;
   private adminRequests: Map<number, AdminRequest>;
+  private issueReports: Map<number, IssueReport>;
   private userCurrentId: number;
   private registrationCurrentId: number;
   private studySessionCurrentId: number;
   private adminRequestCurrentId: number;
+  private issueReportCurrentId: number;
 
   constructor() {
     this.users = new Map();

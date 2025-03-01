@@ -6,7 +6,8 @@ import {
   Registration, InsertRegistration,
   StudySession, InsertStudySession,
   UserProfile, InsertUserProfile, UpdateUserProfile,
-  AdminRequest, InsertAdminRequest
+  AdminRequest, InsertAdminRequest,
+  IssueReport, InsertIssueReport
 } from '@shared/schema';
 
 export class PostgresStorage implements IStorage {
@@ -225,6 +226,55 @@ export class PostgresStorage implements IStorage {
       .set({ role })
       .where(eq(tables.users.id, userId))
       .returning();
+    return result[0];
+  }
+
+  // Issue Report methods
+  async getIssueReports(): Promise<IssueReport[]> {
+    return await db.select().from(tables.issueReports);
+  }
+  
+  async getIssueReport(id: number): Promise<IssueReport | undefined> {
+    const reports = await db.select().from(tables.issueReports).where(eq(tables.issueReports.id, id));
+    return reports[0];
+  }
+  
+  async createIssueReport(report: InsertIssueReport): Promise<IssueReport> {
+    try {
+      console.log("Creating issue report:", JSON.stringify(report, null, 2));
+      const result = await db.insert(tables.issueReports).values(report).returning();
+      console.log("Created issue report:", JSON.stringify(result[0], null, 2));
+      return result[0];
+    } catch (error) {
+      console.error("Error creating issue report:", error);
+      throw error;
+    }
+  }
+  
+  async updateIssueReport(
+    id: number, 
+    status: string, 
+    assignedTo?: number, 
+    resolution?: string
+  ): Promise<IssueReport | undefined> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date()
+    };
+    
+    if (assignedTo) {
+      updateData.assignedTo = assignedTo;
+    }
+    
+    if (resolution) {
+      updateData.resolution = resolution;
+    }
+    
+    const result = await db.update(tables.issueReports)
+      .set(updateData)
+      .where(eq(tables.issueReports.id, id))
+      .returning();
+      
     return result[0];
   }
 }
