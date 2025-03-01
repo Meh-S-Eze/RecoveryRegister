@@ -1,5 +1,5 @@
 import { db } from './db';
-import { users, registrations, studySessions, adminRequests } from '@shared/schema';
+import { users, registrations, studySessions, adminRequests, issueReports } from '@shared/schema';
 import { log } from './vite';
 import postgres from 'postgres';
 import bcrypt from 'bcryptjs';
@@ -81,6 +81,18 @@ export async function createTables() {
         status TEXT NOT NULL DEFAULT 'pending',
         reviewed_by INTEGER REFERENCES users(id),
         review_notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )`,
+      
+      // Issue reports table
+      `CREATE TABLE IF NOT EXISTS issue_reports (
+        id SERIAL PRIMARY KEY,
+        description TEXT NOT NULL,
+        contact_info TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        assigned_to INTEGER REFERENCES users(id),
+        resolution TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )`,
