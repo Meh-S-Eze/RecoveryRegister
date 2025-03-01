@@ -31,8 +31,7 @@ import {
   MailIcon,
   ExternalLinkIcon,
   RepeatIcon,
-  LogOutIcon,
-  Key as KeyIcon
+  LogOutIcon
 } from "lucide-react";
 import type { Registration, StudySession, InsertStudySession } from "@shared/schema";
 import { Helmet } from "react-helmet";
@@ -146,15 +145,6 @@ const parseDateString = (dateStr: string) => {
   return { startDate, recurringDay, isRecurring };
 };
 
-const adminLogger = {
-  error: (message: string, context?: object) => {
-    console.error(`[ADMIN ERROR] ${new Date().toISOString()} - ${message}`, context);
-  },
-  info: (message: string, meta?: object) => {
-    console.log(`[ADMIN] ${new Date().toISOString()} - ${message}`, meta);
-  }
-};
-
 export default function Admin() {
   const { toast } = useToast();
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
@@ -187,19 +177,12 @@ export default function Admin() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      adminLogger.info("Initiating admin auth check");
       setAuthLoading(true);
       try {
         console.log("Checking authentication status...");
         
         // Get all cookies to debug
         console.log("Current cookies:", document.cookie);
-        
-        // Check if we have a debug session ID from localStorage
-        const debugSessionId = localStorage.getItem('recoveryRegister_debug_sessionId');
-        if (debugSessionId) {
-          console.log("Using debug session ID from localStorage:", debugSessionId);
-        }
         
         // Make auth check request with explicit credentials inclusion
         const response = await fetch('/api/auth/me', {
@@ -208,9 +191,7 @@ export default function Admin() {
           headers: {
             'Accept': 'application/json',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            // If we have a debug session ID, send it as a custom header for debugging
-            ...(debugSessionId ? { 'X-Debug-Session-ID': debugSessionId } : {})
+            'Pragma': 'no-cache'
           }
         });
         
@@ -235,35 +216,6 @@ export default function Admin() {
         } else {
           console.log("Auth check failed with status:", response.status);
           setIsAuthenticated(false);
-          
-          // If we're working in dev mode, attempt the dev admin login once if there's
-          // no session, but no error is shown to the user (used for dev convenience)
-          if (process.env.NODE_ENV === 'development' && checkCount === 0) {
-            try {
-              adminLogger.info("Attempting automatic dev login on first load");
-              const devResponse = await fetch('/api/auth/dev-admin-login', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' }
-              });
-              
-              if (devResponse.ok) {
-                const data = await devResponse.json();
-                if (data && data.sessionId) {
-                  localStorage.setItem('recoveryRegister_debug_sessionId', data.sessionId);
-                  console.log("Auto dev login successful, saved session ID:", data.sessionId);
-                }
-                
-                // Recheck auth after a longer delay
-                setTimeout(() => {
-                  recheckAuth();
-                }, 1500);
-              }
-            } catch (devError) {
-              // Just log the error, don't bother the user
-              console.error("Auto dev login failed:", devError);
-            }
-          }
         }
       } catch (error) {
         console.error("Auth check error:", error);
@@ -277,7 +229,6 @@ export default function Admin() {
   }, [toast, checkCount]);
   
   const handleLogout = async () => {
-    adminLogger.info("Admin logout initiated");
     try {
       await apiRequest('POST', '/api/auth/logout', {});
       setIsAuthenticated(false);
@@ -538,32 +489,6 @@ export default function Admin() {
     );
   }
   
-  // Handle dev admin login 
-  const handleDevAdminLogin = async () => {
-    adminLogger.info('Using developer admin bypass');
-    try {
-      const response = await fetch('/api/auth/dev-admin-login', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        // Force recheck auth status
-        setTimeout(() => {
-          recheckAuth();
-        }, 500);
-      } else {
-        const errorText = await response.text();
-        adminLogger.error('Dev admin login failed', { error: errorText });
-      }
-    } catch (error) {
-      adminLogger.error('Dev admin login error', { error });
-    }
-  };
-
   // Show login form if not authenticated
   if (!isAuthenticated) {
     return (
@@ -578,26 +503,14 @@ export default function Admin() {
               <h1 className="text-2xl font-bold text-[#374151]">Admin Dashboard</h1>
               <p className="text-[#6B7280]">Please log in to access the admin features</p>
             </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = '/'}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-                <span>Back to Home</span>
-              </Button>
-              {process.env.NODE_ENV !== 'production' && (
-                <Button
-                  variant="destructive"
-                  onClick={handleDevAdminLogin}
-                  className="flex items-center gap-2"
-                >
-                  <KeyIcon className="h-4 w-4" />
-                  <span>Dev Login</span>
-                </Button>
-              )}
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = '/'}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Button>
           </div>
         </div>
         

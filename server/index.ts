@@ -27,33 +27,14 @@ app.use(
     secret: process.env.SESSION_SECRET || 'recovery-register-default-key',
     resave: true, // Set to true to ensure the session is saved on each request
     saveUninitialized: true, // Set to true to create session for all requests
-    name: 'recoveryRegister.sid', // Custom name to avoid conflicts
-    rolling: true, // Reset the cookie expiration on each response
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Only secure in production
-      sameSite: 'lax', // This helps with cross-site request issues
-      path: '/' // Ensure cookie is available across all paths
+      secure: false, // Set to false in development to work without HTTPS
+      sameSite: 'lax' // This helps with cross-site request issues
     }
   })
 );
-
-// Add debug info for session troubleshooting
-app.use((req, res, next) => {
-  // @ts-ignore - session is added by express-session
-  if (req.path.startsWith('/api/auth')) {
-    console.log(`Session debug info for ${req.path}:`);
-    // @ts-ignore - session is added by express-session
-    console.log(`- Session ID: ${req.sessionID}`);
-    // @ts-ignore - session is added by express-session
-    console.log(`- Is this a new session? ${req.session.isNew ? 'Yes' : 'No'}`);
-    // @ts-ignore - session is added by express-session
-    console.log(`- Session cookie: ${JSON.stringify(req.session.cookie)}`);
-    console.log(`- Raw cookies header: ${req.headers.cookie}`);
-  }
-  next();
-});
 
 app.use((req, res, next) => {
   const start = Date.now();
