@@ -106,6 +106,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = adminUser.id;
       req.session.userRole = adminUser.role;
       
+      console.log("Session before save:", {
+        sessionID: req.sessionID,
+        cookie: req.session.cookie,
+        userId: req.session.userId,
+        userRole: req.session.userRole
+      });
+      
       // Save session explicitly to ensure it's stored before sending response
       req.session.save((err) => {
         if (err) {
@@ -115,9 +122,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log("Dev admin session saved successfully for:", adminUser.username);
         console.log("Session data:", {
+          sessionID: req.sessionID,
           userId: req.session.userId,
           userRole: req.session.userRole
         });
+        
+        // Send a cross-site-compatible cookie response
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        
+        // Set custom header to help debug session issues
+        res.setHeader('X-Session-ID', req.sessionID);
         
         return res.status(200).json({
           id: adminUser.id,
@@ -125,7 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: adminUser.email,
           role: adminUser.role,
           isAnonymous: adminUser.isAnonymous,
-          preferredContact: adminUser.preferredContact
+          preferredContact: adminUser.preferredContact,
+          sessionId: req.sessionID // Include the session ID in the response for debugging
         });
       });
     } catch (error) {

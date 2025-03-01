@@ -38,6 +38,22 @@ app.use(
   })
 );
 
+// Add debug info for session troubleshooting
+app.use((req, res, next) => {
+  // @ts-ignore - session is added by express-session
+  if (req.path.startsWith('/api/auth')) {
+    console.log(`Session debug info for ${req.path}:`);
+    // @ts-ignore - session is added by express-session
+    console.log(`- Session ID: ${req.sessionID}`);
+    // @ts-ignore - session is added by express-session
+    console.log(`- Is this a new session? ${req.session.isNew ? 'Yes' : 'No'}`);
+    // @ts-ignore - session is added by express-session
+    console.log(`- Session cookie: ${JSON.stringify(req.session.cookie)}`);
+    console.log(`- Raw cookies header: ${req.headers.cookie}`);
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

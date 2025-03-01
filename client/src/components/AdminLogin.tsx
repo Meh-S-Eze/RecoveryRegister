@@ -123,17 +123,34 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
   const handleDevLogin = async () => {
     try {
+      clientLogger.info('Attempting dev bypass login');
       const response = await fetch('/api/auth/dev-admin-login', {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.ok) {
-        setTimeout(onLoginSuccess, 500);
+        const data = await response.json();
+        clientLogger.info('Dev login response', data);
+        
+        // If a sessionId was included in the response, log it for debugging
+        if (data && data.sessionId) {
+          console.log('Dev login successful, session ID:', data.sessionId);
+          // Store the session ID in localStorage for debugging
+          localStorage.setItem('recoveryRegister_debug_sessionId', data.sessionId);
+        }
+        
+        // Use a longer delay to ensure the session is properly established
+        setTimeout(onLoginSuccess, 1000);
       } else {
-        throw new Error('Dev login failed');
+        const errorText = await response.text();
+        throw new Error(`Dev login failed: ${errorText}`);
       }
     } catch (error) {
+      clientLogger.error('Dev login error', { error });
       toast({
         title: "Dev Bypass Failed",
         description: "Ensure you're in development mode",

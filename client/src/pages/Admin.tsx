@@ -195,6 +195,12 @@ export default function Admin() {
         // Get all cookies to debug
         console.log("Current cookies:", document.cookie);
         
+        // Check if we have a debug session ID from localStorage
+        const debugSessionId = localStorage.getItem('recoveryRegister_debug_sessionId');
+        if (debugSessionId) {
+          console.log("Using debug session ID from localStorage:", debugSessionId);
+        }
+        
         // Make auth check request with explicit credentials inclusion
         const response = await fetch('/api/auth/me', {
           method: 'GET',
@@ -202,7 +208,9 @@ export default function Admin() {
           headers: {
             'Accept': 'application/json',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache'
+            'Pragma': 'no-cache',
+            // If we have a debug session ID, send it as a custom header for debugging
+            ...(debugSessionId ? { 'X-Debug-Session-ID': debugSessionId } : {})
           }
         });
         
@@ -240,10 +248,16 @@ export default function Admin() {
               });
               
               if (devResponse.ok) {
-                // Recheck auth after a short delay
+                const data = await devResponse.json();
+                if (data && data.sessionId) {
+                  localStorage.setItem('recoveryRegister_debug_sessionId', data.sessionId);
+                  console.log("Auto dev login successful, saved session ID:", data.sessionId);
+                }
+                
+                // Recheck auth after a longer delay
                 setTimeout(() => {
                   recheckAuth();
-                }, 1000);
+                }, 1500);
               }
             } catch (devError) {
               // Just log the error, don't bother the user
