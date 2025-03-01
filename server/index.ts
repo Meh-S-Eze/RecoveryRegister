@@ -27,11 +27,13 @@ app.use(
     secret: process.env.SESSION_SECRET || 'recovery-register-default-key',
     resave: true, // Set to true to ensure the session is saved on each request
     saveUninitialized: true, // Set to true to create session for all requests
+    name: 'recoveryRegister.sid', // Custom name to avoid conflicts
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      secure: false, // Set to false in development to work without HTTPS
-      sameSite: 'lax' // This helps with cross-site request issues
+      secure: process.env.NODE_ENV === 'production', // Only secure in production
+      sameSite: 'lax', // This helps with cross-site request issues
+      path: '/' // Ensure cookie is available across all paths
     }
   })
 );

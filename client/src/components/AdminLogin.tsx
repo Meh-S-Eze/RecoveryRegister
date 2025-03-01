@@ -51,9 +51,18 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
   const login = useMutation({
     mutationFn: async (credentials: LoginFormValues) => {
       clientLogger.info('Admin login attempt', { username: credentials.username });
-      const response = await apiRequest("POST", "/api/auth/login", {
-        identifier: credentials.username,
-        password: credentials.password
+      
+      // Use direct fetch instead of apiRequest to have more control over credentials
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Important for cookie handling
+        body: JSON.stringify({
+          identifier: credentials.username,
+          password: credentials.password
+        })
       });
       
       if (!response.ok) {

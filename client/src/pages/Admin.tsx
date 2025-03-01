@@ -519,10 +519,11 @@ export default function Admin() {
           recheckAuth();
         }, 500);
       } else {
-        adminLogger.error('Dev admin login failed', await response.text());
+        const errorText = await response.text();
+        adminLogger.error('Dev admin login failed', { error: errorText });
       }
     } catch (error) {
-      adminLogger.error('Dev admin login error', error);
+      adminLogger.error('Dev admin login error', { error });
     }
   };
 
