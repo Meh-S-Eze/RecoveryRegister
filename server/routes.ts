@@ -17,6 +17,16 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { PostgresStorage } from "./pgStorage";
 import bcrypt from "bcryptjs";
+
+// Helper function to ensure userId exists
+function ensureUserId(req: Request): number {
+  // @ts-ignore - session is added by express-session
+  const userId = req.session?.userId;
+  if (!userId || typeof userId !== 'number') {
+    throw new Error("Unauthorized: User ID not found in session");
+  }
+  return userId;
+}
 // Import session types
 import "./types";
 
@@ -542,6 +552,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // @ts-ignore - session is added by express-session
       const userId = req.session.userId;
       
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       // Get user and profile
       const user = await storage.getUser(userId);
       const profile = await storage.getUserProfile(userId);
@@ -573,6 +587,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // @ts-ignore - session is added by express-session
       const userId = req.session.userId;
       
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       // Validate profile data
       const profileData = updateUserProfileSchema.parse(req.body);
       
@@ -597,8 +615,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Credential update routes (authenticated only)
   app.post("/api/user/password", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // @ts-ignore - session is added by express-session
-      const userId = req.session.userId;
+      // Get userId from session using our helper
+      let userId;
+      try {
+        userId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Validate password data
       const { currentPassword, newPassword } = updatePasswordSchema.parse(req.body);
@@ -642,8 +665,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/user/email", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // @ts-ignore - session is added by express-session
-      const userId = req.session.userId;
+      // Get userId from session using our helper
+      let userId;
+      try {
+        userId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Validate email data
       const { email, password } = updateEmailSchema.parse(req.body);
@@ -778,8 +806,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create admin request
   app.post("/api/admin-requests", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // @ts-ignore - session is added by express-session
-      const userId = req.session.userId;
+      // Get userId from session using our helper
+      let userId;
+      try {
+        userId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Validate admin request data
       const adminRequestData = adminRequestSchema.parse({
@@ -829,8 +862,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all admin requests (super_admin only)
   app.get("/api/admin-requests", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // @ts-ignore - session is added by express-session
-      const userId = req.session.userId;
+      // Get userId from session using our helper
+      let userId;
+      try {
+        userId = ensureUserId(req);
+      } catch (error) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Get user to check if super_admin
       const user = await storage.getUser(userId);
