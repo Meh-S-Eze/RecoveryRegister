@@ -14,7 +14,10 @@ import {
   type UpdateUserProfile,
   adminRequests,
   type AdminRequest,
-  type InsertAdminRequest
+  type InsertAdminRequest,
+  issueReports,
+  type IssueReport,
+  type InsertIssueReport
 } from "@shared/schema";
 
 // modify the interface with any CRUD methods
@@ -81,10 +84,12 @@ export class MemStorage implements IStorage {
     this.studySessions = new Map();
     this.userProfiles = new Map();
     this.adminRequests = new Map();
+    this.issueReports = new Map();
     this.userCurrentId = 1;
     this.registrationCurrentId = 1;
     this.studySessionCurrentId = 1;
     this.adminRequestCurrentId = 1;
+    this.issueReportCurrentId = 1;
   }
   
   // We'll add the sample data after all methods are defined
@@ -412,6 +417,59 @@ export class MemStorage implements IStorage {
     
     this.adminRequests.set(id, updatedRequest);
     return updatedRequest;
+  }
+
+  // Issue Report methods
+  async getIssueReports(): Promise<IssueReport[]> {
+    return Array.from(this.issueReports.values());
+  }
+  
+  async getIssueReport(id: number): Promise<IssueReport | undefined> {
+    return this.issueReports.get(id);
+  }
+  
+  async createIssueReport(report: InsertIssueReport): Promise<IssueReport> {
+    const id = this.issueReportCurrentId++;
+    const now = new Date();
+    
+    const issueReport: IssueReport = {
+      id,
+      description: report.description,
+      contactInfo: report.contactInfo ?? null,
+      status: report.status ?? "pending",
+      assignedTo: null,
+      resolution: null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.issueReports.set(id, issueReport);
+    return issueReport;
+  }
+  
+  async updateIssueReport(
+    id: number,
+    status: string,
+    assignedTo?: number,
+    resolution?: string
+  ): Promise<IssueReport | undefined> {
+    const report = this.issueReports.get(id);
+    
+    if (!report) {
+      return undefined;
+    }
+    
+    const now = new Date();
+    const updatedReport: IssueReport = {
+      ...report,
+      status,
+      assignedTo: assignedTo ?? report.assignedTo,
+      resolution: resolution ?? report.resolution,
+      updatedAt: now
+    };
+    
+    this.issueReports.set(id, updatedReport);
+    return updatedReport;
   }
 }
 
